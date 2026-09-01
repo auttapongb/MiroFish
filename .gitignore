@@ -58,3 +58,8 @@ backend/uploads/
 
 # Docker 数据
 data/
+# 备份文件（避免误提交密钥/旧代码）
+*.bak
+*.bak.*
+.env.bak
+.env.*.bak
