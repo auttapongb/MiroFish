@@ -2545,24 +2545,38 @@ class ReportManager:
     
     @classmethod
     def get_report_by_simulation(cls, simulation_id: str) -> Optional[Report]:
-        """根据模拟ID获取报告"""
+        """根据模拟ID获取报告
+
+        若存在多份报告（例如 force_regenerate 后），优先返回最新的 completed 报告，
+        否则返回最新的报告。旧实现按 os.listdir 字母序取第一个，会导致重新生成后
+        仍返回旧报告（字母序更小的旧 report_id 排在前）。
+        """
         cls._ensure_reports_dir()
-        
+        matches: List[Report] = []
+
         for item in os.listdir(cls.REPORTS_DIR):
             item_path = os.path.join(cls.REPORTS_DIR, item)
             # 新格式：文件夹
             if os.path.isdir(item_path):
                 report = cls.get_report(item)
                 if report and report.simulation_id == simulation_id:
-                    return report
+                    matches.append(report)
             # 兼容旧格式：JSON文件
             elif item.endswith('.json'):
                 report_id = item[:-5]
                 report = cls.get_report(report_id)
                 if report and report.simulation_id == simulation_id:
-                    return report
-        
-        return None
+                    matches.append(report)
+
+        if not matches:
+            return None
+
+        # 优先返回最新的 completed 报告
+        completed = [r for r in matches if getattr(r, 'status', None) == ReportStatus.COMPLETED]
+        pool = completed or matches
+        # 按 completed_at（缺失时回退 created_at）倒序取最新
+        pool.sort(key=lambda r: r.completed_at or r.created_at or '', reverse=True)
+        return pool[0]
     
     @classmethod
     def list_reports(cls, simulation_id: Optional[str] = None, limit: int = 50) -> List[Report]:
