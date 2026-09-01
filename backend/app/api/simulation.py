@@ -2386,12 +2386,33 @@ def interview_agent():
                 "error": t('api.invalidInterviewPlatform')
             }), 400
         
-        # 检查环境状态
+        # 检查环境状态；若进程已退出但人设文件仍存在，回退到持久化人设采访
         if not SimulationRunner.check_env_alive(simulation_id):
-            return jsonify({
-                "success": False,
-                "error": t('api.envNotRunning')
-            }), 400
+            try:
+                logger.info(f"模拟环境未运行，回退到持久化人设采访: simulation_id={simulation_id}")
+                result = SimulationRunner.interview_agents_batch_persisted(
+                    simulation_id=simulation_id,
+                    interviews=[{"agent_id": agent_id, "prompt": prompt, "platform": platform}],
+                    platform=platform
+                )
+                # 单条采访：从批量结果中提取该 agent 的回答
+                single_result = {
+                    "success": result.get("success", False),
+                    "agent_id": agent_id,
+                    "prompt": prompt,
+                }
+                results = (result.get("result") or {}).get("results", {})
+                if results:
+                    single_result["result"] = next(iter(results.values()))
+                return jsonify({
+                    "success": result.get("success", False),
+                    "data": single_result
+                })
+            except ValueError as e:
+                return jsonify({
+                    "success": False,
+                    "error": t('api.envNotRunning')
+                }), 400
         
         # 优化prompt，添加前缀避免Agent调用工具
         optimized_prompt = optimize_interview_prompt(prompt)
@@ -2521,12 +2542,24 @@ def interview_agents_batch():
                     "error": t('api.interviewListInvalidPlatform', index=i+1)
                 }), 400
 
-        # 检查环境状态
+        # 检查环境状态；若进程已退出但人设文件仍存在，回退到持久化人设采访
         if not SimulationRunner.check_env_alive(simulation_id):
-            return jsonify({
-                "success": False,
-                "error": t('api.envNotRunning')
-            }), 400
+            try:
+                logger.info(f"模拟环境未运行，回退到持久化人设采访: simulation_id={simulation_id}")
+                result = SimulationRunner.interview_agents_batch_persisted(
+                    simulation_id=simulation_id,
+                    interviews=interviews,
+                    platform=platform
+                )
+                return jsonify({
+                    "success": result.get("success", False),
+                    "data": result
+                })
+            except ValueError as e:
+                return jsonify({
+                    "success": False,
+                    "error": t('api.envNotRunning')
+                }), 400
 
         # 优化每个采访项的prompt，添加前缀避免Agent调用工具
         optimized_interviews = []

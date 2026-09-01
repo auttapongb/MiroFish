@@ -271,7 +271,9 @@ class SimulationIPCClient:
         """
         检查模拟环境是否存活
         
-        通过检查 env_status.json 文件来判断
+        通过检查 env_status.json 文件 + 校验记录的进程PID是否真实存活来判断。
+        仅当 status == "alive" 且写入该状态的进程仍存在时才返回 True，
+        防止进程被 SIGKILL 后残留 "alive" 状态导致命令悬挂（504）。
         """
         status_file = os.path.join(self.simulation_dir, "env_status.json")
         if not os.path.exists(status_file):
@@ -280,7 +282,20 @@ class SimulationIPCClient:
         try:
             with open(status_file, 'r', encoding='utf-8') as f:
                 status = json.load(f)
-            return status.get("status") == "alive"
+            if status.get("status") != "alive":
+                return False
+            pid = status.get("pid")
+            if not pid:
+                # 旧格式无 PID 记录，无法确认存活，保守视为未运行
+                return False
+            # 校验该 PID 对应的进程是否真实存在
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return False
+            except PermissionError:
+                pass  # 进程存在，只是无权限发信号
+            return True
         except (json.JSONDecodeError, OSError):
             return False
 
@@ -323,11 +338,15 @@ class SimulationIPCServer:
     def _update_env_status(self, status: str):
         """更新环境状态文件"""
         status_file = os.path.join(self.simulation_dir, "env_status.json")
+        payload = {
+            "status": status,
+            "timestamp": datetime.now().isoformat()
+        }
+        # 记录进程PID，供 check_env_alive 做真实存活校验（防止 SIGKILL 后残留 "alive" 状态）
+        if status == "alive":
+            payload["pid"] = os.getpid()
         with open(status_file, 'w', encoding='utf-8') as f:
-            json.dump({
-                "status": status,
-                "timestamp": datetime.now().isoformat()
-            }, f, ensure_ascii=False, indent=2)
+            json.dump(payload, f, ensure_ascii=False, indent=2)
     
     def poll_commands(self) -> Optional[IPCCommand]:
         """

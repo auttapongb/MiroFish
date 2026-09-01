@@ -1874,6 +1874,125 @@ class SimulationRunner:
         )
     
     @classmethod
+    def _load_persisted_profiles(cls, simulation_id: str) -> List[Dict[str, Any]]:
+        """从持久化人设文件加载Agent列表（Reddit JSON 或 Twitter CSV）。
+
+        用于在模拟进程已退出（SIGKILL 等）但人设文件仍存在时，回退生成采访回答。
+        """
+        import csv
+        sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
+
+        reddit_path = os.path.join(sim_dir, "reddit_profiles.json")
+        if os.path.exists(reddit_path):
+            try:
+                with open(reddit_path, 'r', encoding='utf-8') as f:
+                    profiles = json.load(f)
+                if isinstance(profiles, list) and profiles:
+                    return profiles
+            except (json.JSONDecodeError, OSError):
+                pass
+
+        twitter_path = os.path.join(sim_dir, "twitter_profiles.csv")
+        if os.path.exists(twitter_path):
+            profiles = []
+            try:
+                with open(twitter_path, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        profiles.append({
+                            "user_id": int(row.get("user_id", len(profiles))) if str(row.get("user_id", "")).isdigit() else len(profiles),
+                            "name": row.get("name", ""),
+                            "username": row.get("username", ""),
+                            "bio": row.get("description", ""),
+                            "persona": row.get("user_char", ""),
+                        })
+            except (OSError, ValueError):
+                pass
+            if profiles:
+                return profiles
+
+        return []
+
+    @classmethod
+    def interview_agents_batch_persisted(
+        cls,
+        simulation_id: str,
+        interviews: List[Dict[str, Any]],
+        platform: str = None
+    ) -> Dict[str, Any]:
+        """回退采访：当模拟进程已退出时，用持久化人设 + LLM 生成回答。
+
+        这是对 interview_agents_batch 的降级路径 —— 模拟完成后进程可能被 SIGKILL，
+        导致 IPC 采访永远悬挂（504）。只要人设文件还在，就能直接从人设出发生成回答。
+        """
+        from ..utils.llm_client import LLMClient
+
+        profiles = cls._load_persisted_profiles(simulation_id)
+        if not profiles:
+            raise ValueError(f"模拟已结束且人设文件不存在，无法采访: {simulation_id}")
+
+        # 建立 agent_id -> profile 的映射（按 user_id，缺省回退到列表索引）
+        by_id: Dict[int, Dict[str, Any]] = {}
+        for idx, p in enumerate(profiles):
+            uid = p.get("user_id")
+            if isinstance(uid, str) and uid.isdigit():
+                uid = int(uid)
+            key = uid if isinstance(uid, int) else idx
+            by_id.setdefault(key, p)
+
+        llm = LLMClient()
+        results: Dict[str, Any] = {}
+        timestamp = datetime.now().isoformat()
+
+        for interview in interviews:
+            agent_id = interview.get("agent_id")
+            prompt = interview.get("prompt", "")
+            item_platform = interview.get("platform") or platform
+            platforms = [item_platform] if item_platform else ["twitter", "reddit"]
+
+            profile = by_id.get(agent_id)
+            if profile is None:
+                profile = profiles[agent_id] if agent_id < len(profiles) else {}
+
+            name = profile.get("name") or profile.get("username") or f"Agent {agent_id}"
+            persona = profile.get("persona") or profile.get("bio") or ""
+
+            for pl in platforms:
+                try:
+                    system = (
+                        f"你是「{name}」，{persona}\n"
+                        "你正在接受采访，请以第一人称、符合你人设的口吻回答采访问题。"
+                        "直接给出回答，不要加任何前缀或自我介绍。"
+                    )
+                    answer = llm.chat(
+                        messages=[
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": prompt},
+                        ],
+                        temperature=0.7,
+                        max_tokens=2048,
+                    )
+                except Exception as e:
+                    answer = f"（采访失败：{e}）"
+
+                results[f"{pl}_{agent_id}"] = {
+                    "agent_id": agent_id,
+                    "response": answer,
+                    "timestamp": int(time.time()),
+                    "platform": pl,
+                }
+
+        return {
+            "success": True,
+            "interviews_count": len(interviews),
+            "result": {
+                "interviews_count": len(results),
+                "results": results,
+            },
+            "timestamp": timestamp,
+        }
+    
+    @classmethod
     def close_simulation_env(
         cls,
         simulation_id: str,
