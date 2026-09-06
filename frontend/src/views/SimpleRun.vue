@@ -104,7 +104,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateOntology, buildGraph, getTaskStatus } from '../api/graph'
 import { createSimulation, prepareSimulation, getPrepareStatus, startSimulation, getRunStatus, getSimulationProfilesRealtime, interviewAgents } from '../api/simulation'
-import { generateReport, getReportStatus, getReport } from '../api/report'
+import { generateReport, getReport } from '../api/report'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
 const router = useRouter()
@@ -186,7 +186,8 @@ async function runPipeline() {
     const bres = await buildGraph({ project_id: projectId.value })
     if (!bres.success) throw new Error(bres.error || 'Graph build failed')
     const taskId = bres.data.task_id
-    await poll(() => getTaskStatus(taskId), r => r.success && (r.data.status === 'completed' || r.data.status === 'failed'), 4000)
+    const gres = await poll(() => getTaskStatus(taskId), r => r.success && ['completed', 'failed'].includes(r.data?.status), 4000, 60 * 60 * 1000)
+    if (gres.data?.status !== 'completed') throw new Error('Knowledge graph build failed: ' + (gres.data?.status || 'unknown'))
     addLog('Knowledge graph complete.')
 
     // 3. Create simulation
@@ -199,9 +200,12 @@ async function runPipeline() {
     stageIndex.value = 2
     addLog('Generating agent personas from the seed…')
     const pres = await prepareSimulation({ simulation_id: simulationId.value, use_llm_for_profiles: true })
-    if (pres.success && pres.data && pres.data.task_id) {
-      await poll(() => getPrepareStatus({ task_id: pres.data.task_id, simulation_id: simulationId.value }),
-                 r => { const s = r.data?.status || r.data?.state; return ['ready', 'completed', 'failed'].includes(s) }, 4000)
+    if (!pres.success) throw new Error(pres.error || 'Prepare failed')
+    if (pres.data && pres.data.task_id) {
+      const pres2 = await poll(() => getPrepareStatus({ task_id: pres.data.task_id, simulation_id: simulationId.value }),
+                 r => { const s = r.data?.status || r.data?.state; return ['ready', 'completed', 'failed'].includes(s) }, 4000, 60 * 60 * 1000)
+      const s = pres2.data?.status || pres2.data?.state
+      if (s === 'failed') throw new Error('Agent preparation failed')
     }
     addLog('Personas ready.')
 
@@ -217,19 +221,32 @@ async function runPipeline() {
       return r
     }, r => {
       const s = r.data?.runner_status
-      return ['completed', 'finished', 'done', 'idle', 'stopped', 'not_running', 'success'].includes(s)
-    }, 5000)
+      return ['completed', 'stopped'].includes(s)
+    }, 5000, 3 * 60 * 60 * 1000)
 
     // 6. Report
     stageIndex.value = 4
     addLog('Writing the report…')
-    const rres = await generateReport({ simulation_id: simulationId.value })
-    reportId.value = rres.data?.report_id || rres.data?.task_id
-    if (reportId.value) {
-      await poll(() => getReportStatus(reportId.value), r => r.success && (r.data.status === 'completed' || r.data.status === 'failed'), 4000)
+    let rres = null
+    for (let i = 0; i < 30; i++) {
+      rres = await generateReport({ simulation_id: simulationId.value })
+      if (rres.success && rres.data?.report_id) break
+      if (rres.ingestion_pending) { addLog('Graph ingestion still in progress — waiting…'); await sleep(5000); continue }
+      break
     }
-    const rep = await getReport(reportId.value)
-    reportMarkdown.value = rep.data?.markdown_content || rep.data?.content || ''
+    if (!rres?.success) throw new Error(rres?.error || 'Report generation failed')
+    reportId.value = rres.data.report_id
+    // report is generated async — poll getReport until markdown_content is ready
+    let rep = null
+    for (let i = 0; i < 720; i++) {
+      try {
+        const r = await getReport(reportId.value)
+        if (r?.success && r?.data?.markdown_content) { rep = r; break }
+      } catch (e) { /* report not ready yet */ }
+      await sleep(5000)
+    }
+    if (!rep) throw new Error('Report generation timed out')
+    reportMarkdown.value = rep.data.markdown_content
     reportDownloadUrl.value = URL.createObjectURL(new Blob([reportMarkdown.value], { type: 'text/markdown' }))
     addLog('Report generated.')
 
