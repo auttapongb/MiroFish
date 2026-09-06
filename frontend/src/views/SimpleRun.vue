@@ -12,7 +12,7 @@
     <!-- RUNNING: progress stepper -->
     <main v-if="phase !== 'done'" class="stage-wrap">
       <div class="stage-card">
-        <h1>{{ running ? 'Running your simulation' : 'Preparing…' }}</h1>
+        <h1>{{ stopped ? 'Simulation stopped' : (running ? 'Running your simulation' : 'Preparing…') }}</h1>
         <p class="sub">MiroFish is extracting entities, building a knowledge graph, generating personas, and simulating the scenario — all automatically.</p>
 
         <!-- stepper -->
@@ -40,7 +40,12 @@
           </div>
         </div>
 
-        <button v-if="error" class="btn err-btn" @click="router.push('/')">← Back to start</button>
+        <div class="actions-row">
+          <button v-if="running && !stopped && !error && stageIndex === 3" class="btn stop-btn" @click="stopRun" :disabled="stopping">
+            {{ stopping ? 'Stopping…' : '■ Stop simulation' }}
+          </button>
+          <button v-if="error || stopped" class="btn err-btn" @click="router.push('/')">← Back to start</button>
+        </div>
       </div>
     </main>
 
@@ -103,7 +108,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateOntology, buildGraph, getTaskStatus } from '../api/graph'
-import { createSimulation, prepareSimulation, getPrepareStatus, startSimulation, getRunStatus, getSimulationProfilesRealtime, interviewAgents } from '../api/simulation'
+import { createSimulation, prepareSimulation, getPrepareStatus, startSimulation, getRunStatus, stopSimulation, getSimulationProfilesRealtime, interviewAgents } from '../api/simulation'
 import { generateReport, getReport } from '../api/report'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
@@ -116,6 +121,9 @@ const error = ref('')
 const logs = ref([])
 const logBox = ref(null)
 const phase = ref('run') // run | done
+const stopped = ref(false)
+const stopping = ref(false)
+const stopRequested = ref(false)
 
 const projectId = ref(null)
 const simulationId = ref(null)
@@ -150,6 +158,22 @@ function addLog(msg) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+
+async function stopRun() {
+  if (!simulationId.value || stopping.value) return
+  stopping.value = true
+  stopRequested.value = true
+  addLog('Stop requested — terminating simulation…')
+  try {
+    const res = await stopSimulation({ simulation_id: simulationId.value })
+    if (res.success) addLog('Simulation stopped.')
+    else addLog('Stop call returned: ' + (res.error || 'unknown'))
+  } catch (e) {
+    addLog('Stop failed: ' + (e.message || 'unknown'))
+  } finally {
+    stopping.value = false
+  }
+}
 
 async function poll(fn, isDone, interval = 3000, timeout = 20 * 60 * 1000) {
   const start = Date.now()
@@ -221,8 +245,16 @@ async function runPipeline() {
       return r
     }, r => {
       const s = r.data?.runner_status
+      if (stopRequested.value && s === 'stopped') return true
       return ['completed', 'stopped'].includes(s)
     }, 5000, 3 * 60 * 60 * 1000)
+
+    if (stopRequested.value) {
+      stopped.value = true
+      addLog('Simulation stopped — report skipped.')
+      running.value = false
+      return
+    }
 
     // 6. Report
     stageIndex.value = 4
@@ -363,7 +395,10 @@ onMounted(runPipeline)
 .log-time { color: #38bdf8; margin-right: 8px; }
 
 .btn { font-family: inherit; border: none; cursor: pointer; font-weight: 600; border-radius: 10px; }
-.err-btn { margin-top: 16px; background: #fee2e2; color: #b91c1c; padding: 10px 18px; }
+.actions-row { display: flex; gap: 10px; margin-top: 16px; }
+.stop-btn { background: #ef4444; color: #fff; padding: 10px 18px; }
+.stop-btn:disabled { opacity: .6; cursor: not-allowed; }
+.err-btn { background: #fee2e2; color: #b91c1c; padding: 10px 18px; }
 
 .result-wrap { max-width: 1080px; margin: 0 auto; padding: 28px 24px 60px; }
 .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
