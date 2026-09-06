@@ -167,6 +167,20 @@
               </div>
             </div>
 
+            <!-- 示例下载 + 最佳实践 -->
+            <div class="console-section seed-guide">
+              <div class="console-header">
+                <span class="console-label">📥 Example seeds</span>
+                <span class="console-meta">best results: 5–15 numbered people</span>
+              </div>
+              <div class="seed-tip">Upload <strong>one</strong> .md / .txt / .pdf "reality seed" + one simulation prompt. Each <code>### N. Name — Role</code> person becomes a distinct agent.</div>
+              <div class="seed-downloads">
+                <a class="seed-link" href="/examples/launch-date-conflict.md" download>⬇️ Launch-date conflict</a>
+                <a class="seed-link" href="/examples/market-entry-thailand.md" download>⬇️ Market entry (Thailand)</a>
+                <a class="seed-link" href="/examples/ride-hailing-ban.md" download>⬇️ Ride-hailing ban</a>
+              </div>
+            </div>
+
             <!-- 分割线 -->
             <div class="console-divider">
               <span>{{ $t('home.inputParams') }}</span>
@@ -919,6 +933,14 @@ const startSimulation = () => {
 .mode-option.active { border-color: #000; background: #fff; box-shadow: 0 0 0 1px #000; }
 .mode-name { display: block; font-weight: 700; font-size: .92rem; font-family: var(--font-mono, monospace); }
 .mode-desc { display: block; font-size: .74rem; color: var(--gray-text, #666); margin-top: 3px; line-height: 1.4; }
+
+/* seed guide + example downloads */
+.seed-guide { border-top: 1px dashed var(--border, #e5e5e5); padding-top: 4px; }
+.seed-tip { font-size: .8rem; color: var(--gray-text, #666); line-height: 1.5; margin: 4px 0 10px; }
+.seed-tip code { font-family: var(--font-mono, monospace); background: #f4f4f4; padding: 1px 5px; border-radius: 4px; font-size: .74rem; }
+.seed-downloads { display: flex; flex-direction: column; gap: 6px; }
+.seed-link { display: flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600; color: #000; text-decoration: none; padding: 8px 12px; border: 1px solid var(--border, #e5e5e5); border-radius: 8px; transition: border-color .15s, background .15s; }
+.seed-link:hover { border-color: #000; background: #fafafa; }
 </style>
 
 <style>
