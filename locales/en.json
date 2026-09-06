@@ -35,6 +35,11 @@
   "home": {
     "tagline": "Concise & Universal Swarm Intelligence Engine",
     "version": "/ v0.1-Preview",
+    "modeLabel": "Mode",
+    "modeSimple": "Simple",
+    "modeSimpleDesc": "Guided: input \u2192 progress \u2192 report \u2192 chat",
+    "modeDetail": "Detail",
+    "modeDetailDesc": "Full 5-step workbench",
     "heroTitle1": "Upload Reports,",
     "heroTitle2": "Predict the Future",
     "heroDesc": "From a single document, {brand} extracts reality seeds to auto-generate a parallel world with up to {agentScale}. Inject variables from a god's-eye view to find the {optimalSolution} in complex group dynamics.",

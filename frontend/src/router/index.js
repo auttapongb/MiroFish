@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
+import SimpleRun from '../views/SimpleRun.vue'
 import Process from '../views/MainView.vue'
 import SimulationView from '../views/SimulationView.vue'
 import SimulationRunView from '../views/SimulationRunView.vue'
@@ -11,6 +12,12 @@ const routes = [
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/simple/:projectId',
+    name: 'SimpleRun',
+    component: SimpleRun,
+    props: true
   },
   {
     path: '/process/:projectId',
@@ -45,7 +52,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory('/mirofish/'),
+  history: createWebHistory('/'),
   routes
 })
 

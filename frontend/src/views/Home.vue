@@ -190,6 +190,22 @@
             </div>
 
             <!-- 启动按钮 -->
+            <div class="console-section">
+              <div class="console-header">
+                <span class="console-label">{{ $t('home.modeLabel') }}</span>
+              </div>
+              <div class="mode-selector">
+                <button type="button" class="mode-option" :class="{ active: mode === 'simple' }" @click="mode = 'simple'">
+                  <span class="mode-name">{{ $t('home.modeSimple') }}</span>
+                  <span class="mode-desc">{{ $t('home.modeSimpleDesc') }}</span>
+                </button>
+                <button type="button" class="mode-option" :class="{ active: mode === 'detail' }" @click="mode = 'detail'">
+                  <span class="mode-name">{{ $t('home.modeDetail') }}</span>
+                  <span class="mode-desc">{{ $t('home.modeDetailDesc') }}</span>
+                </button>
+              </div>
+            </div>
+
             <div class="console-section btn-section">
               <button 
                 class="start-engine-btn"
@@ -231,6 +247,7 @@ const files = ref([])
 const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
+const mode = ref('simple') // 'simple' | 'detail'
 
 // 文件输入引用
 const fileInput = ref(null)
@@ -304,7 +321,7 @@ const startSimulation = () => {
     
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
     router.push({
-      name: 'Process',
+      name: mode.value === 'simple' ? 'SimpleRun' : 'Process',
       params: { projectId: 'new' }
     })
   })
@@ -894,6 +911,14 @@ const startSimulation = () => {
     margin-bottom: 20px;
   }
 }
+
+/* mode selector */
+.mode-selector { display: flex; gap: 10px; }
+.mode-option { flex: 1; text-align: left; background: #fafafa; border: 1px solid var(--border, #e5e5e5); border-radius: 10px; padding: 12px 14px; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s; }
+.mode-option:hover { border-color: #333; }
+.mode-option.active { border-color: #000; background: #fff; box-shadow: 0 0 0 1px #000; }
+.mode-name { display: block; font-weight: 700; font-size: .92rem; font-family: var(--font-mono, monospace); }
+.mode-desc { display: block; font-size: .74rem; color: var(--gray-text, #666); margin-top: 3px; line-height: 1.4; }
 </style>
 
 <style>
