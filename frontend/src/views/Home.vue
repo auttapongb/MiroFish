@@ -179,6 +179,12 @@
                 <a class="seed-link" href="/examples/market-entry-thailand.md" download>⬇️ Market entry (Thailand)</a>
                 <a class="seed-link" href="/examples/ride-hailing-ban.md" download>⬇️ Ride-hailing ban</a>
               </div>
+              <div class="seed-sub">Full project — Khlong Toei (Bangkok):</div>
+              <div class="seed-downloads">
+                <a class="seed-link" href="/examples/khlong-toei-20-personas.md" download>⬇️ 20 personas (reality seed)</a>
+                <a class="seed-link" href="/examples/khlong-toei-12-personas.md" download>⬇️ 12 personas (trimmed)</a>
+                <a class="seed-link" href="/examples/khlong-toei-scenario.md" download>⬇️ Scenario (simulation prompt)</a>
+              </div>
             </div>
 
             <!-- 分割线 -->
@@ -938,6 +944,7 @@ const startSimulation = () => {
 .seed-guide { border-top: 1px dashed var(--border, #e5e5e5); padding-top: 4px; }
 .seed-tip { font-size: .8rem; color: var(--gray-text, #666); line-height: 1.5; margin: 4px 0 10px; }
 .seed-tip code { font-family: var(--font-mono, monospace); background: #f4f4f4; padding: 1px 5px; border-radius: 4px; font-size: .74rem; }
+.seed-sub { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-text, #666); margin: 10px 0 4px; }
 .seed-downloads { display: flex; flex-direction: column; gap: 6px; }
 .seed-link { display: flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600; color: #000; text-decoration: none; padding: 8px 12px; border: 1px solid var(--border, #e5e5e5); border-radius: 8px; transition: border-color .15s, background .15s; }
 .seed-link:hover { border-color: #000; background: #fafafa; }
