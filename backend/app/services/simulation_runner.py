@@ -637,6 +637,7 @@ class SimulationRunner:
         
         monitor_error: Exception | None = None
         exit_code: int | None = None
+        env_alive_detected = False
         try:
             while process.poll() is None:  # 进程仍在运行
                 # 读取 Twitter 动作日志
@@ -653,6 +654,17 @@ class SimulationRunner:
                 
                 # 更新状态
                 cls._save_run_state(state)
+
+                # FIX: 模拟子进程完成轮次后会进入 wait-for-commands 模式而不退出
+                # （用于 interview 功能），导致 runner_status 永远停在 "running"。
+                # 这里通过 env_status.json 的 "alive" 状态检测轮次已完成，主动跳出。
+                try:
+                    if cls.get_env_status_detail(simulation_id).get("status") == "alive":
+                        env_alive_detected = True
+                        break
+                except Exception:
+                    pass
+
                 time.sleep(2)
             
             # 进程结束后，最后读取一次日志
@@ -690,7 +702,7 @@ class SimulationRunner:
                     if not manual_stop and monitor_error is not None:
                         desired_status = RunnerStatus.FAILED
                         error_message = str(monitor_error)
-                    elif not manual_stop and exit_code != 0:
+                    elif not manual_stop and exit_code is not None and exit_code != 0:
                         desired_status = RunnerStatus.FAILED
                         main_log_path = os.path.join(sim_dir, "simulation.log")
                         error_info = ""
@@ -745,9 +757,12 @@ class SimulationRunner:
                 cls._manual_stop_requests.discard(simulation_id)
             
             # 清理进程资源
-            cls._processes.pop(simulation_id, None)
-            cls._action_queues.pop(simulation_id, None)
+            # FIX: 若自然完成但子进程进入 wait-for-commands 模式（env alive），
+            # 保留进程引用，使 interview / close_env / stop 继续工作。
             cls._monitor_threads.pop(simulation_id, None)
+            if not env_alive_detected:
+                cls._processes.pop(simulation_id, None)
+                cls._action_queues.pop(simulation_id, None)
             
             # 关闭日志文件句柄
             if simulation_id in cls._stdout_files:
