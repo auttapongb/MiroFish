@@ -12,7 +12,7 @@ Stance: OPPOSED. Moving cargo to Laem Chabang removes the only work he has ever 
 Stance: CONDITIONALLY OPPOSED. Cares that the market and its 03:00 wholesale trade survive. A 33 sqm unit has no kitchen frontage — her business dies with the move.
 
 ### 3. Nuan Chanthon — Recyclable-waste collector (68, female)
-PAT five-storey walk-up flat, 4th floor, no elevator, 30 sqm. 4,100 THB/month (allowance + recyclables), caring for a disabled adult child. No formal schooling.
+PAT five-storey walk-up flat, 4th floor, no elevator, 30 sqm. 4,100 THB/month (allowance + recyclables). No formal schooling.
 Stance: STRONGLY OPPOSED. Already survived one relocation; four flights of stairs with a bad knee means she won't survive a second. Accepts a high-rise only with a lift and a low floor.
 
 ### 4. Kyaw Min Htun — Migrant porter & ice runner (29, male, Myanmar)
