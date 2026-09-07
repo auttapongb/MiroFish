@@ -271,6 +271,15 @@ class SimulationConfigGenerator:
             SimulationParameters: 完整的模拟参数
         """
         logger.info(f"开始智能生成模拟配置: simulation_id={simulation_id}, 实体数={len(entities)}")
+
+        # FIX: 只有个体自然人应成为模拟 Agent；组织/机构/群体（Bangkok Port、PAT、
+        # community committee、developers 等）是背景而非发声主体，否则 Agent 数量会
+        # 远超用户 persona 数量（12 个 persona 膨胀成 32 个 Agent）。
+        entities = [
+            e for e in entities
+            if (e.get_entity_type() or "").strip().lower() != "organization"
+        ]
+        logger.info(f"过滤组织/群体实体后: {len(entities)}个Agent实体")
         
         # 计算总步骤数
         num_batches = math.ceil(len(entities) / self.AGENTS_PER_BATCH)
