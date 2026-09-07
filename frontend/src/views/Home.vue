@@ -175,9 +175,12 @@
               </div>
               <div class="seed-tip">Upload <strong>one</strong> .md / .txt / .pdf "reality seed" + one simulation prompt. Each <code>### N. Name — Role</code> person becomes a distinct agent.</div>
               <div class="seed-downloads">
-                <a class="seed-link" href="/examples/launch-date-conflict.md" download>⬇️ Launch-date conflict</a>
-                <a class="seed-link" href="/examples/market-entry-thailand.md" download>⬇️ Market entry (Thailand)</a>
-                <a class="seed-link" href="/examples/ride-hailing-ban.md" download>⬇️ Ride-hailing ban</a>
+                <a class="seed-link" href="/examples/launch-date-conflict.md" download>⬇️ Launch-date conflict — personas</a>
+                <a class="seed-link" href="/examples/launch-date-conflict-scenario.md" download>⬇️ Launch-date conflict — scenario</a>
+                <a class="seed-link" href="/examples/market-entry-thailand.md" download>⬇️ Market entry (Thailand) — personas</a>
+                <a class="seed-link" href="/examples/market-entry-thailand-scenario.md" download>⬇️ Market entry (Thailand) — scenario</a>
+                <a class="seed-link" href="/examples/ride-hailing-ban.md" download>⬇️ Ride-hailing ban — personas</a>
+                <a class="seed-link" href="/examples/ride-hailing-ban-scenario.md" download>⬇️ Ride-hailing ban — scenario</a>
               </div>
               <div class="seed-sub">Full project — Khlong Toei (Bangkok):</div>
               <div class="seed-downloads">
