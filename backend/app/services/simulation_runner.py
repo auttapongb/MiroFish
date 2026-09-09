@@ -518,6 +518,7 @@ class SimulationRunner:
                 sys.executable,  # Python解释器
                 script_path,
                 "--config", config_path,  # 使用完整配置文件路径
+                "--no-wait",  # exit after rounds complete (no zombie wait-for-commands subprocess)
             ]
             
             # 如果指定了最大轮数，添加到命令行参数
