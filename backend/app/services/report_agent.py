@@ -1168,6 +1168,15 @@ class ReportAgent:
                 data["name"] = data.pop("tool")
             if "params" in data and "parameters" not in data:
                 data["parameters"] = data.pop("params")
+            # OpenAI-style {"name": ..., "arguments": ...} (dict or JSON string)
+            if "arguments" in data and "parameters" not in data:
+                args = data.pop("arguments")
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except (json.JSONDecodeError, ValueError):
+                        args = {}
+                data["parameters"] = args if isinstance(args, dict) else {}
             return True
         return False
     
