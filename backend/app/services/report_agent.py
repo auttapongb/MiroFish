@@ -1282,6 +1282,38 @@ class ReportAgent:
         content = re.sub(r'\n{3,}', '\n\n', content)
         return content.strip()
 
+    def _generate_plain_summary(self, report_content: str) -> str:
+        """Generate a plain-language (non-expert) summary appended after the full report."""
+        try:
+            system = (
+                "You are an expert at translating dense technical reports into plain, everyday "
+                "language that a general reader with no domain knowledge can understand."
+            )
+            user = (
+                "Below is a simulation-forecast report. Write a 'Plain Language Summary' of 250-350 words "
+                "that a non-expert can understand.\n\n"
+                "Rules:\n"
+                "- Use simple, everyday words (avoid jargon such as 'crony capitalism', 'aerotropolis', "
+                "'integrated resort', 'veto authority').\n"
+                "- Explain WHO the key players are, WHAT happened, and WHAT it means for ordinary people.\n"
+                "- State the bottom line clearly: who wins, who loses, what actually happens.\n"
+                "- Write 3-5 short paragraphs of flowing plain English. No headings, no bullet points, no quotes.\n\n"
+                "Report:\n" + (report_content or "")[:12000] + "\n\n"
+                "Plain Language Summary:"
+            )
+            messages = [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ]
+            resp = self.llm.chat(messages=messages, temperature=0.4, max_tokens=1200)
+            if not resp:
+                return ""
+            resp = resp.split("Plain Language Summary:")[-1].strip()
+            return resp
+        except Exception as e:
+            logger.warning(f"plain summary generation failed: {e}")
+            return ""
+
     def plan_outline(
         self, 
         progress_callback: Optional[Callable] = None
@@ -1888,6 +1920,18 @@ class ReportAgent:
             
             # 使用ReportManager组装完整报告
             report.markdown_content = ReportManager.assemble_full_report(report_id, outline)
+
+            # 追加 Plain Language Summary（面向非专业读者的平实摘要）
+            try:
+                _plain = self._generate_plain_summary(report.markdown_content)
+                if _plain:
+                    report.markdown_content += f"\n\n## Plain Language Summary\n\n{_plain}"
+                    _full_path = ReportManager._get_report_markdown_path(report_id)
+                    with open(_full_path, "w", encoding="utf-8") as _f:
+                        _f.write(report.markdown_content)
+            except Exception as _e:
+                logger.warning(f"plain summary generation failed: {_e}")
+
             report.status = ReportStatus.COMPLETED
             report.completed_at = datetime.now().isoformat()
             
