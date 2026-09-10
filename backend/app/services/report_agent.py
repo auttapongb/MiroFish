@@ -1061,14 +1061,15 @@ class ReportAgent:
                 return json.dumps(result, ensure_ascii=False, indent=2)
             
             else:
-                return f"Unknown tool: {tool_name}. Please use one of: insight_forge, panorama_search, quick_search"
+                return f"Unknown tool: {tool_name}. Please use one of: {', '.join(sorted(self.VALID_TOOL_NAMES))}"
                 
         except Exception as e:
             logger.error(t('report.toolExecFailed', toolName=tool_name, error=str(e)))
             return f"Tool execution failed: {str(e)}"
     
     # 合法的工具名称集合，用于裸 JSON 兜底解析时校验
-    VALID_TOOL_NAMES = {"insight_forge", "panorama_search", "quick_search", "interview_agents"}
+    VALID_TOOL_NAMES = {"insight_forge", "panorama_search", "quick_search", "interview_agents",
+    "search_graph", "get_graph_statistics", "get_entity_summary", "get_simulation_context", "get_entities_by_type"}
 
     @staticmethod
     def _normalize_tool_call_tags(text: str) -> str:
@@ -1082,8 +1083,8 @@ class ReportAgent:
         if not text:
             return text
         vb = chr(0xFF5C)  # fullwidth vertical bar
-        text = re.sub(r'<\s*' + vb + vb + r'DSML' + vb + vb + r'([A-Za-z_][A-Za-z0-9_]*)\s*>', r'<\1>', text)
-        text = re.sub(r'</\s*' + vb + vb + r'DSML' + vb + vb + r'([A-Za-z_][A-Za-z0-9_]*)\s*>', r'</\1>', text)
+        text = re.sub(r'<\s*' + vb + vb + r'[A-Za-z]*' + vb + vb + r'([A-Za-z_][A-Za-z0-9_]*)([^>]*)>', r'<\1\2>', text)
+        text = re.sub(r'</\s*' + vb + vb + r'[A-Za-z]*' + vb + vb + r'([A-Za-z_][A-Za-z0-9_]*)\s*>', r'</\1>', text)
         # DeepSeek plural wrapper: <tool_calls>...</tool_calls> -> <tool_call>...</tool_call>
         text = re.sub(r'</\s*tool_calls\s*>', '</tool_call>', text, flags=re.IGNORECASE)
         text = re.sub(r'<\s*tool_calls\s*>', '<tool_call>', text, flags=re.IGNORECASE)
@@ -1095,7 +1096,7 @@ class ReportAgent:
         def _invoke_to_tool_call(m):
             name = m.group(1)
             body = m.group(2)
-            parts = ['"name": "%s"' % name]
+            params = {}
             for pm in re.finditer(
                 r'<parameter\s+name="([^"]+)"(?:\s+string="(true|false)")?[^>]*>(.*?)</parameter>',
                 body, re.DOTALL,
@@ -1103,11 +1104,33 @@ class ReportAgent:
                 pname = pm.group(1)
                 is_str = (pm.group(2) == 'true')
                 pval = pm.group(3).strip()
-                if is_str:
-                    pval = json.dumps(pval)
-                parts.append('"%s": %s' % (pname, pval))
-            return '<tool_call>{%s}</tool_call>' % ', '.join(parts)
+                if not is_str:
+                    try:
+                        pval = json.loads(pval)
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                params[pname] = pval
+            if set(params.keys()) == {"parameters"} and isinstance(params["parameters"], dict):
+                params = params["parameters"]
+            return '<tool_call>{"name": "%s", "parameters": %s}</tool_call>' % (name, json.dumps(params))
         text = re.sub(r'<invoke\s+name="([^"]+)"[^>]*>(.*?)</invoke>', _invoke_to_tool_call, text, flags=re.DOTALL | re.IGNORECASE)
+        # DeepSeek DSML function-call form: <tool_name>NAME</tool_name> <parameter name="X">V</parameter>...
+        def _toolname_to_tool_call(m):
+            name = m.group(1).strip()
+            body = m.group(2) or ""
+            params = {}
+            for pm in re.finditer(r'<parameter\s+name="([^"]+)"[^>]*>(.*?)</parameter>', body, re.DOTALL):
+                pname = pm.group(1)
+                pval = pm.group(2).strip()
+                try:
+                    pval = json.loads(pval)
+                except (json.JSONDecodeError, ValueError):
+                    pass
+                params[pname] = pval
+            if set(params.keys()) == {"parameters"} and isinstance(params["parameters"], dict):
+                params = params["parameters"]
+            return '<tool_call>{"name": "%s", "parameters": %s}</tool_call>' % (name, json.dumps(params))
+        text = re.sub(r'<tool_name\s*>([^<]+)</tool_name>\s*((?:<parameter\b[^>]*>.*?</parameter>\s*)*)', _toolname_to_tool_call, text, flags=re.DOTALL | re.IGNORECASE)
         return text
 
     def _parse_tool_calls(self, response: str) -> List[Dict[str, Any]]:
@@ -1160,7 +1183,10 @@ class ReportAgent:
 
     def _is_valid_tool_call(self, data: dict) -> bool:
         """校验解析出的 JSON 是否是合法的工具调用"""
-        # 支持 {"name": ..., "parameters": ...} 和 {"tool": ..., "params": ...} 两种键名
+        # 展平 OpenAI 旧格式: {"function": {"name": ..., "arguments": ...}}
+        if isinstance(data.get("function"), dict) and "name" not in data:
+            data.update(data.pop("function"))
+        # 支持 name/parameters, tool/params, arguments, input 多种键名
         tool_name = data.get("name") or data.get("tool")
         if tool_name and tool_name in self.VALID_TOOL_NAMES:
             # 统一键名为 name / parameters
@@ -1177,6 +1203,10 @@ class ReportAgent:
                     except (json.JSONDecodeError, ValueError):
                         args = {}
                 data["parameters"] = args if isinstance(args, dict) else {}
+            # Anthropic-style {"name": ..., "input": {...}}
+            if "input" in data and "parameters" not in data:
+                inp = data.pop("input")
+                data["parameters"] = inp if isinstance(inp, dict) else {}
             return True
         return False
     
@@ -1233,10 +1263,11 @@ class ReportAgent:
         content = re.sub(r'<tool_call\b.*$', '', content, flags=re.IGNORECASE | re.DOTALL)
         # Strip any remaining <invoke>/<parameter>/</invoke> (Anthropic/Hermes format)
         content = re.sub(r'<invoke\b[^>]*>.*?</invoke>', '', content, flags=re.IGNORECASE | re.DOTALL)
-        content = re.sub(r'</?(?:invoke|parameter)\b[^>]*>', '', content, flags=re.IGNORECASE)
+        content = re.sub(r'<tool_name\b[^>]*>.*?</tool_name>', '', content, flags=re.IGNORECASE | re.DOTALL)
+        content = re.sub(r'</?(?:invoke|parameter|tool_name)\b[^>]*>', '', content, flags=re.IGNORECASE)
         # Drop the leaked ReAct reasoning preamble: everything before the first real
         # markdown content marker (heading, bold, or horizontal rule).
-        m = re.search(r'(?m)^\s*(?:#{1,6}\s|\*\*|---)', content)
+        m = re.search(r'(?m)^\s*(?:#{1,6}\s|\*\*|---|>\s)', content)
         if m and m.start() > 0:
             content = content[m.start():]
         # Strip any remaining standalone reasoning lines (no content marker was present).
