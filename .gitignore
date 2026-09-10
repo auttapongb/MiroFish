@@ -63,3 +63,7 @@ data/
 *.bak.*
 .env.bak
 .env.*.bak
+
+# local backup files
+*.bak*
+*.bak2.*
