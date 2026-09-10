@@ -469,6 +469,11 @@ const initObserver = () => {
       entries.forEach((entry) => {
         const shouldExpand = entry.isIntersecting
         
+        // 只展开、不自动收起：容器高度随展开/收起变化，会反向触发 IntersectionObserver，
+        // 形成「展开→变高→判定离开视口→收起→变矮→再展开」的反馈循环，导致卡片反复伸缩而无法点击。
+        // 因此忽略 "离开视口" 的收起信号（collapse），只保留展开。
+        if (!shouldExpand) return
+        
         // 更新待执行的目标状态（无论是否在动画中都要记录最新的目标状态）
         pendingState = shouldExpand
         
