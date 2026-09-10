@@ -496,9 +496,10 @@ class SimulationManager:
                     if project_id is None or state.project_id == project_id:
                         simulations.append(state)
         
-        # Sort newest-first (chronological desc) so the latest simulations appear at the top
-        # of the history — os.listdir() order is arbitrary, which hid recent runs.
-        simulations.sort(key=lambda s: s.updated_at or s.created_at or "", reverse=True)
+        # Sort by creation time (newest-first). Use created_at (not updated_at): updated_at
+        # gets bumped by background pollers on stale/stuck sims, which pushed a week-old
+        # "stopping" sim above a freshly-created one. created_at reflects true creation order.
+        simulations.sort(key=lambda s: s.created_at or s.updated_at or "", reverse=True)
         return simulations
     
     def get_profiles(self, simulation_id: str, platform: str = None) -> List[Dict[str, Any]]:
