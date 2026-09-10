@@ -172,7 +172,7 @@ class SimulationParameters:
     llm_base_url: str = ""
     
     # 生成元数据
-    generated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    generated_at: str = field(default_factory=lambda: datetime.now().astimezone().isoformat())
     generation_reasoning: str = ""  # LLM的推理说明
     
     def to_dict(self) -> Dict[str, Any]:

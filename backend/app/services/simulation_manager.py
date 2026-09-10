@@ -71,8 +71,8 @@ class SimulationState:
     reddit_status: str = "not_started"
     
     # 时间戳
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now().astimezone().isoformat())
+    updated_at: str = field(default_factory=lambda: datetime.now().astimezone().isoformat())
     
     # 错误信息
     error: Optional[str] = None
@@ -160,7 +160,7 @@ class SimulationManager:
         sim_dir = self._get_simulation_dir(state.simulation_id)
         state_file = os.path.join(sim_dir, "state.json")
         
-        state.updated_at = datetime.now().isoformat()
+        state.updated_at = datetime.now().astimezone().isoformat()
         
         with open(state_file, 'w', encoding='utf-8') as f:
             json.dump(state.to_dict(), f, ensure_ascii=False, indent=2)
@@ -197,8 +197,8 @@ class SimulationManager:
             current_round=data.get("current_round", 0),
             twitter_status=data.get("twitter_status", "not_started"),
             reddit_status=data.get("reddit_status", "not_started"),
-            created_at=data.get("created_at", datetime.now().isoformat()),
-            updated_at=data.get("updated_at", datetime.now().isoformat()),
+            created_at=data.get("created_at", datetime.now().astimezone().isoformat()),
+            updated_at=data.get("updated_at", datetime.now().astimezone().isoformat()),
             error=data.get("error"),
         )
         

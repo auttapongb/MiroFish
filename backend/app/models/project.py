@@ -149,7 +149,7 @@ class ProjectManager:
         cls._ensure_projects_dir()
         
         project_id = f"proj_{uuid.uuid4().hex[:12]}"
-        now = datetime.now().isoformat()
+        now = datetime.now().astimezone().isoformat()
         
         project = Project(
             project_id=project_id,
@@ -173,7 +173,7 @@ class ProjectManager:
     @classmethod
     def save_project(cls, project: Project) -> None:
         """保存项目元数据"""
-        project.updated_at = datetime.now().isoformat()
+        project.updated_at = datetime.now().astimezone().isoformat()
         meta_path = cls._get_project_meta_path(project.project_id)
         
         with open(meta_path, 'w', encoding='utf-8') as f:

@@ -43,7 +43,7 @@ class IPCCommand:
     command_id: str
     command_type: CommandType
     args: Dict[str, Any]
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now().astimezone().isoformat())
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -59,7 +59,7 @@ class IPCCommand:
             command_id=data["command_id"],
             command_type=CommandType(data["command_type"]),
             args=data.get("args", {}),
-            timestamp=data.get("timestamp", datetime.now().isoformat())
+            timestamp=data.get("timestamp", datetime.now().astimezone().isoformat())
         )
 
 
@@ -70,7 +70,7 @@ class IPCResponse:
     status: CommandStatus
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now().astimezone().isoformat())
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -88,7 +88,7 @@ class IPCResponse:
             status=CommandStatus(data["status"]),
             result=data.get("result"),
             error=data.get("error"),
-            timestamp=data.get("timestamp", datetime.now().isoformat())
+            timestamp=data.get("timestamp", datetime.now().astimezone().isoformat())
         )
 
 
@@ -340,7 +340,7 @@ class SimulationIPCServer:
         status_file = os.path.join(self.simulation_dir, "env_status.json")
         payload = {
             "status": status,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().astimezone().isoformat()
         }
         # 记录进程PID，供 check_env_alive 做真实存活校验（防止 SIGKILL 后残留 "alive" 状态）
         if status == "alive":

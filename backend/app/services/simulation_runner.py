@@ -143,7 +143,7 @@ class SimulationRunState:
     
     # 时间戳
     started_at: Optional[str] = None
-    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    updated_at: str = field(default_factory=lambda: datetime.now().astimezone().isoformat())
     completed_at: Optional[str] = None
     
     # 错误信息
@@ -163,7 +163,7 @@ class SimulationRunState:
         else:
             self.reddit_actions_count += 1
         
-        self.updated_at = datetime.now().isoformat()
+        self.updated_at = datetime.now().astimezone().isoformat()
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -327,7 +327,7 @@ class SimulationRunner:
                 twitter_actions_count=data.get("twitter_actions_count", 0),
                 reddit_actions_count=data.get("reddit_actions_count", 0),
                 started_at=data.get("started_at"),
-                updated_at=data.get("updated_at", datetime.now().isoformat()),
+                updated_at=data.get("updated_at", datetime.now().astimezone().isoformat()),
                 completed_at=data.get("completed_at"),
                 error=data.get("error"),
                 process_pid=data.get("process_pid"),
@@ -417,7 +417,7 @@ class SimulationRunner:
             runner_status=RunnerStatus.STARTING,
             total_rounds=total_rounds,
             total_simulation_hours=total_hours,
-            started_at=datetime.now().isoformat(),
+            started_at=datetime.now().astimezone().isoformat(),
         )
         
         # Atomically claim this simulation ID. The expensive updater/process
@@ -744,7 +744,7 @@ class SimulationRunner:
 
                     state.runner_status = desired_status
                     state.error = error_message
-                    state.completed_at = datetime.now().isoformat()
+                    state.completed_at = datetime.now().astimezone().isoformat()
                     cls._save_run_state(state)
                     cls._sync_simulation_status(
                         simulation_id,
@@ -868,7 +868,7 @@ class SimulationRunner:
                             
                             action = AgentAction(
                                 round_num=action_data.get("round", 0),
-                                timestamp=action_data.get("timestamp", datetime.now().isoformat()),
+                                timestamp=action_data.get("timestamp", datetime.now().astimezone().isoformat()),
                                 platform=platform,
                                 agent_id=action_data.get("agent_id", 0),
                                 agent_name=action_data.get("agent_name", ""),
@@ -1067,7 +1067,7 @@ class SimulationRunner:
                         state.runner_status = RunnerStatus.FAILED
                         state.twitter_running = False
                         state.reddit_running = False
-                        state.completed_at = datetime.now().isoformat()
+                        state.completed_at = datetime.now().astimezone().isoformat()
                         state.error = f"Zep图谱写入未完整完成: {error}"
                         cls._save_run_state(state)
                         cls._sync_simulation_status(
@@ -1079,7 +1079,7 @@ class SimulationRunner:
                 state.runner_status = RunnerStatus.STOPPED
                 state.twitter_running = False
                 state.reddit_running = False
-                state.completed_at = datetime.now().isoformat()
+                state.completed_at = datetime.now().astimezone().isoformat()
                 state.error = None
                 cls._save_run_state(state)
                 cls._sync_simulation_status(
@@ -1958,7 +1958,7 @@ class SimulationRunner:
 
         llm = LLMClient()
         results: Dict[str, Any] = {}
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now().astimezone().isoformat()
 
         for interview in interviews:
             agent_id = interview.get("agent_id")

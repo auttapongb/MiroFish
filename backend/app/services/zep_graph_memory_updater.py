@@ -402,7 +402,7 @@ class ZepGraphMemoryUpdater:
             action_type=data.get("action_type", ""),
             action_args=data.get("action_args", {}),
             round_num=data.get("round", 0),
-            timestamp=data.get("timestamp", datetime.now().isoformat()),
+            timestamp=data.get("timestamp", datetime.now().astimezone().isoformat()),
         )
         
         self.add_activity(activity)

@@ -355,7 +355,7 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
                 try:
                     state_data["status"] = "ready"
                     from datetime import datetime
-                    state_data["updated_at"] = datetime.now().isoformat()
+                    state_data["updated_at"] = datetime.now().astimezone().isoformat()
                     with open(state_file, 'w', encoding='utf-8') as f:
                         json.dump(state_data, f, ensure_ascii=False, indent=2)
                     logger.info(f"自动更新模拟状态: {simulation_id} preparing -> ready")

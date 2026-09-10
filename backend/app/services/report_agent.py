@@ -83,7 +83,7 @@ class ReportLogger:
             section_index: 当前章节索引（可选）
         """
         log_entry = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now().astimezone().isoformat(),
             "elapsed_seconds": round(self._get_elapsed_time(), 2),
             "report_id": self.report_id,
             "action": action,
@@ -1760,7 +1760,7 @@ class ReportAgent:
             graph_id=self.graph_id,
             simulation_requirement=self.simulation_requirement,
             status=ReportStatus.PENDING,
-            created_at=datetime.now().isoformat()
+            created_at=datetime.now().astimezone().isoformat()
         )
         
         # 已完成的章节标题列表（用于进度追踪）
@@ -1933,7 +1933,7 @@ class ReportAgent:
                 logger.warning(f"plain summary generation failed: {_e}")
 
             report.status = ReportStatus.COMPLETED
-            report.completed_at = datetime.now().isoformat()
+            report.completed_at = datetime.now().astimezone().isoformat()
             
             # 计算总耗时
             total_time_seconds = (datetime.now() - start_time).total_seconds()
@@ -2449,7 +2449,7 @@ class ReportManager:
             "message": message,
             "current_section": current_section,
             "completed_sections": completed_sections or [],
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().astimezone().isoformat()
         }
         
         with open(cls._get_progress_path(report_id), 'w', encoding='utf-8') as f:
