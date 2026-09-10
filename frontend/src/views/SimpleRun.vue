@@ -5,7 +5,7 @@
       <div class="brand" @click="router.push('/')">MIRO<span>FISH</span></div>
       <div class="top-right">
         <span class="mode-badge">Simple mode</span>
-        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="gh">GitHub ↗</a>
+        
       </div>
     </header>
 

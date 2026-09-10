@@ -5,9 +5,7 @@
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
         <LanguageSwitcher />
-        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
-          {{ $t('nav.visitGithub') }} <span class="arrow">↗</span>
-        </a>
+        
       </div>
     </nav>
 
@@ -187,6 +185,20 @@
                 <a class="seed-link" href="/examples/khlong-toei-20-personas.md" download>⬇️ 20 personas (reality seed)</a>
                 <a class="seed-link" href="/examples/khlong-toei-12-personas.md" download>⬇️ 12 personas (trimmed)</a>
                 <a class="seed-link" href="/examples/khlong-toei-scenario.md" download>⬇️ Scenario (simulation prompt)</a>
+                <a class="seed-link" href="/examples/khlong-toei-casino-scenario.md" download>⬇️ Casino scenario (prompt)</a>
+                <a class="seed-link" href="/examples/khlong-toei-casino-report.md" download>⬇️ Casino report (output)</a>
+              </div>
+              <div class="seed-sub">More scenarios — personas + scenario + report:</div>
+              <div class="seed-downloads">
+                <a class="seed-link" href="/examples/chiang-mai-flood-personas.md" download>⬇️ Chiang Mai flood — personas</a>
+                <a class="seed-link" href="/examples/chiang-mai-flood-scenario.md" download>⬇️ Chiang Mai flood — scenario</a>
+                <a class="seed-link" href="/examples/chiang-mai-flood-report.md" download>⬇️ Chiang Mai flood — report</a>
+                <a class="seed-link" href="/examples/rayong-ai-layoffs-personas.md" download>⬇️ Rayong AI layoffs — personas</a>
+                <a class="seed-link" href="/examples/rayong-ai-layoffs-scenario.md" download>⬇️ Rayong AI layoffs — scenario</a>
+                <a class="seed-link" href="/examples/rayong-ai-layoffs-report.md" download>⬇️ Rayong AI layoffs — report</a>
+                <a class="seed-link" href="/examples/pai-tourism-boom-personas.md" download>⬇️ Pai tourism boom — personas</a>
+                <a class="seed-link" href="/examples/pai-tourism-boom-scenario.md" download>⬇️ Pai tourism boom — scenario</a>
+                <a class="seed-link" href="/examples/pai-tourism-boom-report.md" download>⬇️ Pai tourism boom — report</a>
               </div>
             </div>
 
@@ -398,22 +410,6 @@ const startSimulation = () => {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.github-link {
-  color: var(--white);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: opacity 0.2s;
-}
-
-.github-link:hover {
-  opacity: 0.8;
 }
 
 .arrow {

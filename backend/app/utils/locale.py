@@ -69,8 +69,14 @@ def get_language_instruction() -> str:
     lang_label = lang_config.get('label', '中文')
     # 返回强指令：单条弱提示（如 "Please respond in English."）在 95% 中文 prompt 下会被忽略。
     # 这里明确语言名 + 覆盖所有输出字段 + 强制翻译工具返回内容，确保 LLM 真正切换语言。
+    hard_rule = (
+        "OUTPUT LANGUAGE OVERRIDE — ABSOLUTE PRIORITY: You MUST write the ENTIRE report "
+        "in " + str(lang_label) + " only. "
+        "Translate ALL tool results and quotes into " + str(lang_label) + " before writing them. "
+        "Do NOT output any other language, not even in quoted text or headings."
+    )
     return (
-        f"【输出语言 - 最高优先级，必须严格遵守】\n"
+        hard_rule + "\n"
         f"你必须使用「{lang_label}」撰写整份报告，包括：标题、摘要、每个章节的标题与正文、"
         f"所有引用块（> 格式）以及任何说明性文字。\n"
         f"禁止使用其他语言输出正文。如果检索工具返回的内容是其他语言，"
