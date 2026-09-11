@@ -71,7 +71,34 @@ def stance_analysis():
             p["profession"] = b.get("profession", "")
             p["bio"] = (b.get("persona") or "")[:900]
         distribution = dict(Counter(p.get("stance") for p in personas))
-        return jsonify({"success": True, "data": {"distribution": distribution, "personas": personas}})
+
+        # --- result analytics: platforms + action types + top personas ---
+        import sqlite3 as _sq
+        platforms = {"reddit": 0, "twitter": 0}
+        action_types = Counter()
+        persona_actions = Counter()
+        for _plat, _db in [("reddit", os.path.join(sim_dir, "reddit_simulation.db")),
+                           ("twitter", os.path.join(sim_dir, "twitter_simulation.db"))]:
+            if os.path.exists(_db):
+                try:
+                    _c = _sq.connect(_db)
+                    for _action, _uid in _c.execute("SELECT action, user_id FROM trace"):
+                        action_types[_action] += 1
+                        persona_actions[_uid] += 1
+                        platforms[_plat] += 1
+                    _c.close()
+                except Exception:
+                    pass
+        name_map = {i: p.get("name", str(i)) for i, p in enumerate(profiles)}
+        top_personas = [{"name": name_map.get(uid, str(uid)), "actions": c}
+                        for uid, c in persona_actions.most_common(12)]
+        return jsonify({"success": True, "data": {
+            "distribution": distribution,
+            "personas": personas,
+            "platforms": platforms,
+            "action_types": dict(action_types),
+            "top_personas": top_personas,
+        }})
     except Exception as e:
         logger.error(f"stance analysis failed: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
