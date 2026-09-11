@@ -670,21 +670,19 @@ class GraphBuilderService:
             status = getattr(summary, "status", None)
             progress = getattr(summary, "progress", None)
             percent = float(getattr(progress, "percent_complete", 0) or 0) / 100
-            completed = int(getattr(progress, "succeeded_items", 0) or 0)
-            # 停滞检测：0 成功条目超过 120s 视为 Zep 批次卡死，提前失败（触发上层重提交）
-            if completed == 0 and time.time() - start_time > 120:
-                raise TimeoutError(
-                    f"Zep batch {submission.batch_id} stalled at 0/{submission.item_count} items after 120s"
-                )
             if progress_callback:
+                completed = int(getattr(progress, "succeeded_items", 0) or 0)
+                _msg = t(
+                    'progress.zepProcessing',
+                    completed=completed,
+                    total=submission.item_count,
+                    pending=max(submission.item_count - completed, 0),
+                    elapsed=int(time.time() - start_time),
+                )
+                if completed == 0:
+                    _msg = f"{_msg} — Zep 免费版处理较慢，通常需 10-15 分钟，请耐心等待"
                 progress_callback(
-                    t(
-                        'progress.zepProcessing',
-                        completed=completed,
-                        total=submission.item_count,
-                        pending=max(submission.item_count - completed, 0),
-                        elapsed=int(time.time() - start_time),
-                    ),
+                    _msg,
                     min(max(percent, 0.0), 1.0),
                 )
 
