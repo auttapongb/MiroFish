@@ -89,6 +89,32 @@ def stance_analysis():
                     _c.close()
                 except Exception:
                     pass
+        # --- timeline: bucket trace actions into 24 rounds by wall-clock time ---
+        import datetime as _dt
+        _all_ts = []
+        for _plat, _db in [("reddit", os.path.join(sim_dir, "reddit_simulation.db")),
+                           ("twitter", os.path.join(sim_dir, "twitter_simulation.db"))]:
+            if os.path.exists(_db):
+                try:
+                    _c = _sq.connect(_db)
+                    for (_ts,) in _c.execute("SELECT created_at FROM trace WHERE created_at IS NOT NULL"):
+                        try:
+                            _all_ts.append(_dt.datetime.fromisoformat(str(_ts)))
+                        except Exception:
+                            pass
+                    _c.close()
+                except Exception:
+                    pass
+        timeline = []
+        if _all_ts:
+            _tmin, _tmax = min(_all_ts), max(_all_ts)
+            _span = (_tmax - _tmin).total_seconds() or 1
+            _bins = [0] * 24
+            for _t in _all_ts:
+                _idx = min(23, int((_t - _tmin).total_seconds() / _span * 24))
+                _bins[_idx] += 1
+            timeline = [{"round": i + 1, "actions": _bins[i]} for i in range(24)]
+
         name_map = {i: p.get("name", str(i)) for i, p in enumerate(profiles)}
         top_personas = [{"name": name_map.get(uid, str(uid)), "actions": c}
                         for uid, c in persona_actions.most_common(12)]
@@ -98,6 +124,7 @@ def stance_analysis():
             "platforms": platforms,
             "action_types": dict(action_types),
             "top_personas": top_personas,
+            "timeline": timeline,
         }})
     except Exception as e:
         logger.error(f"stance analysis failed: {e}")
