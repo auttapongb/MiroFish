@@ -498,7 +498,7 @@ def prepare_simulation():
         use_llm_for_profiles = data.get('use_llm_for_profiles', True)
         parallel_profile_count = data.get('parallel_profile_count', 5)
         # 确定性时间配置（可选）：用户显式指定时长 + 频率，覆盖LLM生成的轮次
-        duration_value = data.get('duration_value')          # int, 如 12
+        duration_value = data.get('duration_value') or 12    # 默认 12 个月，避免 null 落入 LLM 随机时长
         duration_unit = data.get('duration_unit', 'months')  # 'weeks' | 'months'
         frequency = data.get('frequency', 'weekly')          # 'weekly' | 'monthly'
         

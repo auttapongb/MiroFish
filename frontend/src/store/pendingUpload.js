@@ -7,7 +7,7 @@ import { reactive } from 'vue'
 const state = reactive({
   files: [],
   simulationRequirement: '',
-  durationValue: null,
+  durationValue: 12,
   durationUnit: 'months',
   frequency: 'weekly',
   isPending: false
@@ -15,7 +15,7 @@ const state = reactive({
 
 // 持久化的模拟设置（跨 simple/detail 模式共享，clearPendingUpload 不清空）
 export const simulationSettings = reactive({
-  durationValue: null,
+  durationValue: 12,
   durationUnit: 'months',
   frequency: 'weekly'
 })
@@ -23,11 +23,11 @@ export const simulationSettings = reactive({
 export function setPendingUpload(files, requirement, duration = {}) {
   state.files = files
   state.simulationRequirement = requirement
-  state.durationValue = duration.durationValue ?? null
+  state.durationValue = duration.durationValue ?? 12
   state.durationUnit = duration.durationUnit ?? 'months'
   state.frequency = duration.frequency ?? 'weekly'
   state.isPending = true
-  simulationSettings.durationValue = duration.durationValue ?? null
+  simulationSettings.durationValue = duration.durationValue ?? 12
   simulationSettings.durationUnit = duration.durationUnit ?? 'months'
   simulationSettings.frequency = duration.frequency ?? 'weekly'
 }
@@ -46,7 +46,7 @@ export function getPendingUpload() {
 export function clearPendingUpload() {
   state.files = []
   state.simulationRequirement = ''
-  state.durationValue = null
+  state.durationValue = 12
   state.durationUnit = 'months'
   state.frequency = 'weekly'
   state.isPending = false
