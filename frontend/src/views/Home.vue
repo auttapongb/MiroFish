@@ -222,6 +222,25 @@
                 ></textarea>
                 <div class="model-badge">{{ $t('home.engineBadge') }}</div>
               </div>
+              <div
+                class="prompt-upload"
+                :class="{ 'drag-over': isPromptDragOver }"
+                @dragover.prevent="isPromptDragOver = true"
+                @dragleave.prevent="isPromptDragOver = false"
+                @drop.prevent="handleScenarioDrop"
+                @click="triggerScenarioFileInput"
+              >
+                <input
+                  ref="scenarioFileInput"
+                  type="file"
+                  accept=".md,.txt"
+                  @change="handleScenarioFileSelect"
+                  style="display: none"
+                  :disabled="loading"
+                />
+                <span v-if="!formData.simulationRequirement" class="pu-text">📄 Upload scenario file (.md / .txt) — or drag & drop</span>
+                <span v-else class="pu-text">📄 Scenario loaded — click to replace with another file</span>
+              </div>
             </div>
 
             <!-- 时长与频率（确定性） -->
@@ -315,6 +334,10 @@ const mode = ref('simple') // 'simple' | 'detail'
 // 文件输入引用
 const fileInput = ref(null)
 
+// 场景（simulation prompt）文件上传引用
+const scenarioFileInput = ref(null)
+const isPromptDragOver = ref(false)
+
 // 计算属性:是否可以提交
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
@@ -371,6 +394,39 @@ const addFiles = (newFiles) => {
 // 移除文件
 const removeFile = (index) => {
   files.value.splice(index, 1)
+}
+
+// 触发场景文件选择
+const triggerScenarioFileInput = () => {
+  if (!loading.value) scenarioFileInput.value?.click()
+}
+
+const handleScenarioFileSelect = (event) => {
+  const f = event.target.files && event.target.files[0]
+  if (f) readScenarioFile(f)
+  if (event.target) event.target.value = ''
+}
+
+const handleScenarioDrop = (e) => {
+  isPromptDragOver.value = false
+  const f = Array.from(e.dataTransfer.files)[0]
+  if (f) readScenarioFile(f)
+}
+
+// 读取场景文件内容，填充到 prompt 文本框（.md/.txt，前端 FileReader，不改后端）
+const readScenarioFile = (f) => {
+  const ext = f.name.split('.').pop().toLowerCase()
+  if (!['md', 'txt'].includes(ext)) {
+    error.value = 'Scenario file must be .md or .txt (PDF not supported here — paste its text instead)'
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = () => {
+    formData.value.simulationRequirement = String(reader.result || '')
+    error.value = ''
+  }
+  reader.onerror = () => { error.value = 'Failed to read scenario file' }
+  reader.readAsText(f)
 }
 
 // 滚动到底部
@@ -992,6 +1048,9 @@ const startSimulation = () => {
 .duration-select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-family: var(--font-mono); font-size: .9rem; background: var(--white); color: var(--black); }
 .duration-sep { color: var(--gray-text); font-weight: 700; }
 .duration-hint { margin-top: 8px; font-family: var(--font-mono); font-size: .8rem; color: var(--orange); }
+
+.prompt-upload { margin-top: 10px; padding: 12px 16px; border: 1px dashed var(--border); border-radius: 10px; cursor: pointer; text-align: center; font-family: var(--font-mono); font-size: .8rem; color: var(--gray-text); transition: all .2s; }
+.prompt-upload:hover, .prompt-upload.drag-over { border-color: var(--orange); color: var(--orange); background: #fff5f0; }
 </style>
 
 <style>
