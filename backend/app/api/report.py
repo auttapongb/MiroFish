@@ -347,19 +347,33 @@ def get_generate_status():
         task_id = data.get('task_id')
         simulation_id = data.get('simulation_id')
         
-        # 如果提供了simulation_id，先检查是否已有完成的报告
+        # 如果提供了simulation_id，返回该模拟的最新报告状态（completed / processing / failed）
         if simulation_id:
             existing_report = ReportManager.get_report_by_simulation(simulation_id)
-            if existing_report and existing_report.status == ReportStatus.COMPLETED:
+            if existing_report:
+                status = existing_report.status
+                if status == ReportStatus.COMPLETED:
+                    return jsonify({
+                        "success": True,
+                        "data": {
+                            "simulation_id": simulation_id,
+                            "report_id": existing_report.report_id,
+                            "status": "completed",
+                            "progress": 100,
+                            "message": t('api.reportGenerated'),
+                            "already_completed": True
+                        }
+                    })
+                # 非完成状态（processing/failed）：返回当前状态，避免落入下方 400
                 return jsonify({
                     "success": True,
                     "data": {
                         "simulation_id": simulation_id,
                         "report_id": existing_report.report_id,
-                        "status": "completed",
-                        "progress": 100,
-                        "message": t('api.reportGenerated'),
-                        "already_completed": True
+                        "status": status.value if hasattr(status, 'value') else str(status),
+                        "progress": 0,
+                        "message": "",
+                        "already_completed": False
                     }
                 })
         

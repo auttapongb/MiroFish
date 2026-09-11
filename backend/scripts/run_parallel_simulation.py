@@ -1235,7 +1235,7 @@ async def run_twitter_simulation(
         simulated_minutes = round_num * minutes_per_round
         # 修复：1周=168h=7*24h 会让模拟小时恒为 0（午夜/off-peak），导致几乎无 Agent 活跃
         # 改为让小时在一天内循环，使各轮覆盖高峰/低谷时段
-        simulated_hour = round_num % 24
+        simulated_hour = (round_num + 8) % 24
         simulated_day = simulated_minutes // (60 * 24) + 1
         
         active_agents = get_active_agents_for_round(
@@ -1436,7 +1436,7 @@ async def run_reddit_simulation(
         simulated_minutes = round_num * minutes_per_round
         # 修复：1周=168h=7*24h 会让模拟小时恒为 0（午夜/off-peak），导致几乎无 Agent 活跃
         # 改为让小时在一天内循环，使各轮覆盖高峰/低谷时段
-        simulated_hour = round_num % 24
+        simulated_hour = (round_num + 8) % 24
         simulated_day = simulated_minutes // (60 * 24) + 1
         
         active_agents = get_active_agents_for_round(
