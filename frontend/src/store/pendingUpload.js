@@ -20,6 +20,30 @@ export const simulationSettings = reactive({
   frequency: 'weekly'
 })
 
+// 持久化到 localStorage，避免页面刷新/跳转后确定性参数被重置
+const SETTINGS_KEY = 'mirofish_simulation_settings'
+function persistSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      durationValue: simulationSettings.durationValue,
+      durationUnit: simulationSettings.durationUnit,
+      frequency: simulationSettings.frequency
+    }))
+  } catch (e) { /* ignore */ }
+}
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      simulationSettings.durationValue = parsed.durationValue ?? 12
+      simulationSettings.durationUnit = parsed.durationUnit ?? 'months'
+      simulationSettings.frequency = parsed.frequency ?? 'weekly'
+    }
+  } catch (e) { /* ignore */ }
+}
+loadSettings()
+
 export function setPendingUpload(files, requirement, duration = {}) {
   state.files = files
   state.simulationRequirement = requirement
@@ -30,6 +54,7 @@ export function setPendingUpload(files, requirement, duration = {}) {
   simulationSettings.durationValue = duration.durationValue ?? 12
   simulationSettings.durationUnit = duration.durationUnit ?? 'months'
   simulationSettings.frequency = duration.frequency ?? 'weekly'
+  persistSettings()
 }
 
 export function getPendingUpload() {
