@@ -547,7 +547,11 @@ def _build_graph_impl():
                 and project.zep_batch_operation_id
             ):
                 builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
-                batch_summary = builder.get_batch_summary(project.zep_batch_id)
+                try:
+                    batch_summary = builder.get_batch_summary(project.zep_batch_id)
+                except Exception:
+                    # 批次已过期/被 Zep 回收：视为不可恢复，走重建路径
+                    batch_summary = None
                 if getattr(batch_summary, "status", None) in {
                     "queued",
                     "processing",

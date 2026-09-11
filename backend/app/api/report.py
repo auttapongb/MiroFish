@@ -364,18 +364,31 @@ def get_generate_status():
                             "already_completed": True
                         }
                     })
-                # 非完成状态（processing/failed）：返回当前状态，避免落入下方 400
+                # 非完成状态：规范化 pending/planning/generating -> processing，failed 保留
+                status_str = "failed" if status == ReportStatus.FAILED else "processing"
                 return jsonify({
                     "success": True,
                     "data": {
                         "simulation_id": simulation_id,
                         "report_id": existing_report.report_id,
-                        "status": status.value if hasattr(status, 'value') else str(status),
+                        "status": status_str,
                         "progress": 0,
                         "message": "",
                         "already_completed": False
                     }
                 })
+            # 尚未生成报告对象：返回 processing，而不是 400
+            return jsonify({
+                "success": True,
+                "data": {
+                    "simulation_id": simulation_id,
+                    "report_id": None,
+                    "status": "processing",
+                    "progress": 0,
+                    "message": "",
+                    "already_completed": False
+                }
+            })
         
         if not task_id:
             return jsonify({
