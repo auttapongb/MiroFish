@@ -14,7 +14,7 @@ import signal
 import atexit
 from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 from queue import Queue
 
@@ -51,6 +51,24 @@ class RunnerStatus(str, Enum):
 
 class SimulationStopPending(TimeoutError):
     """The monitor still owns a bounded graph-ingestion finalization."""
+
+
+BANGKOK_TZ = timezone(timedelta(hours=7))  # 模拟世界时区：Asia/Bangkok (UTC+7)
+
+
+def to_bangkok_aware(ts):
+    """将 naive（服务器本地时间）或 aware 时间戳转换为曼谷(+07:00) ISO。
+    模拟世界固定在曼谷时区，因此所有 Agent 动作时间戳统一显示为曼谷时间。"""
+    if not ts:
+        return ts
+    try:
+        dt = datetime.fromisoformat(str(ts))
+    except (ValueError, TypeError):
+        return ts
+    if dt.tzinfo is None:
+        # naive -> 视为服务器本地时间，再转曼谷
+        dt = dt.replace(tzinfo=datetime.now().astimezone().tzinfo)
+    return dt.astimezone(BANGKOK_TZ).isoformat()
 
 
 @dataclass
@@ -868,7 +886,7 @@ class SimulationRunner:
                             
                             action = AgentAction(
                                 round_num=action_data.get("round", 0),
-                                timestamp=action_data.get("timestamp", datetime.now().astimezone().isoformat()),
+                                timestamp=to_bangkok_aware(action_data.get("timestamp") or datetime.now().astimezone().isoformat()),
                                 platform=platform,
                                 agent_id=action_data.get("agent_id", 0),
                                 agent_name=action_data.get("agent_name", ""),

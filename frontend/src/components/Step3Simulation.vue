@@ -636,7 +636,7 @@ const truncateContent = (content, maxLength = 100) => {
 const formatActionTime = (timestamp) => {
   if (!timestamp) return ''
   try {
-    return new Date(timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    return new Date(timestamp).toLocaleTimeString('en-US', { timeZone: 'Asia/Bangkok', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
   } catch {
     return ''
   }
