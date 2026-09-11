@@ -60,6 +60,7 @@ export function setPendingUpload(files, requirement, duration = {}) {
   simulationSettings.durationValue = duration.durationValue ?? 12
   simulationSettings.durationUnit = duration.durationUnit ?? 'months'
   simulationSettings.frequency = duration.frequency ?? 'weekly'
+  simulationSettings.graphMemoryEnabled = duration.graphMemoryEnabled ?? true
   persistSettings()
 }
 

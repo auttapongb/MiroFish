@@ -283,6 +283,13 @@
                 </select>
               </div>
               <div class="duration-hint">→ {{ computedRounds }} simulation rounds total</div>
+              <div class="graph-memory-toggle">
+                <label class="gm-label">
+                  <input type="checkbox" v-model="formData.graphMemoryEnabled" :disabled="loading" class="gm-check">
+                  <span class="gm-track"><span class="gm-thumb"></span></span>
+                  <span class="gm-text">🧠 Graph memory write (round-by-round Zep enrichment)</span>
+                </label>
+              </div>
             </div>
 
             <!-- 启动按钮 -->
@@ -338,7 +345,8 @@ const formData = ref({
   simulationRequirement: '',
   durationValue: 3,
   durationUnit: 'months',
-  frequency: 'weekly'
+  frequency: 'weekly',
+  graphMemoryEnabled: true
 })
 
 // 文件列表
@@ -500,7 +508,8 @@ const startSimulation = () => {
     setPendingUpload(files.value, formData.value.simulationRequirement, {
       durationValue: Number(formData.value.durationValue) || null,
       durationUnit: formData.value.durationUnit,
-      frequency: formData.value.frequency
+      frequency: formData.value.frequency,
+      graphMemoryEnabled: formData.value.graphMemoryEnabled
     })
     
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
@@ -1115,6 +1124,15 @@ const startSimulation = () => {
 .prompt-upload:hover, .prompt-upload.drag-over { border-color: var(--orange); color: var(--orange); background: #fff5f0; }
 
 .error-banner { margin: 12px 0; padding: 10px 14px; border: 1px solid #fca5a5; background: #fef2f2; color: #b91c1c; border-radius: 10px; font-family: var(--font-mono); font-size: .8rem; }
+
+.graph-memory-toggle { margin: 10px 0 0; }
+.gm-label { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 13px; color: #cbd5e1; }
+.gm-check { display: none; }
+.gm-track { width: 36px; height: 20px; border-radius: 999px; background: #1e293b; border: 1px solid #334155; position: relative; transition: background .15s; flex-shrink: 0; }
+.gm-thumb { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #64748b; transition: transform .15s, background .15s; }
+.gm-check:checked + .gm-track { background: #1d4ed8; border-color: #2563eb; }
+.gm-check:checked + .gm-track .gm-thumb { transform: translateX(16px); background: #fff; }
+.gm-text { line-height: 1.3; }
 </style>
 
 <style>
