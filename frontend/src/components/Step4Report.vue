@@ -395,6 +395,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } f
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getAgentLog, getConsoleLog } from '../api/report'
+import StanceDashboard from './StanceDashboard.vue'
 
 const router = useRouter()
 const { t } = useI18n()
