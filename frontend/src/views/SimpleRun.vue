@@ -51,6 +51,7 @@
 
     <!-- DONE: report + chat -->
     <main v-else class="result-wrap">
+      <div class="done-banner">✅ Done — here's your prediction</div>
       <div class="tabs">
         <button :class="{ active: tab === 'report' }" @click="tab = 'report'">📄 Report</button>
         <button :class="{ active: tab === 'agents' }" @click="tab = 'agents'">💬 Talk to agents ({{ personas.length }})</button>
@@ -452,4 +453,6 @@ onMounted(runPipeline)
 .send:disabled { opacity: .5; cursor: not-allowed; }
 
 @media (max-width: 720px) { .chat-layout { grid-template-columns: 1fr; } .stepper { flex-wrap: wrap; gap: 8px; } }
+
+.done-banner { margin-bottom: 16px; padding: 14px 18px; background: #ecfdf5; border: 1px solid #86efac; color: #047857; border-radius: 12px; font-weight: 700; font-size: 1rem; }
 </style>
