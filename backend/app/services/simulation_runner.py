@@ -865,6 +865,9 @@ class SimulationRunner:
                                 elif event_type == "round_end":
                                     round_num = action_data.get("round", 0)
                                     simulated_hours = action_data.get("simulated_hours", 0)
+                                    # round_end 事件未携带 simulated_hours，从轮次推算累计模拟小时
+                                    if not simulated_hours and round_num:
+                                        simulated_hours = round_num * (state.total_simulation_hours // max(state.total_rounds, 1))
                                     
                                     # 更新各平台独立的轮次和时间
                                     if platform == "twitter":
