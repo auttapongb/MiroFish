@@ -304,6 +304,37 @@ class SimulationRunner:
             )
     
     @classmethod
+    def recover_stuck_simulations(cls):
+        """\u542f\u52a8\u65f6\u6062\u590d\u5361\u5728 STOPPING \u72b6\u6001\u7684\u6a21\u62df\uff08pm2 \u91cd\u542f\u4e2d\u65ad\u76d1\u63a7\u7ebf\u7a0b\u540e\u9057\u7559\uff09\u3002
+
+        STOPPING \u610f\u5473\u7740\u8f6e\u6b21\u5df2\u5168\u90e8\u5b8c\u6210\uff0c\u4ec5\u56e0 Zep \u56fe\u8c31\u5199\u5165 drain \u88ab\u4e2d\u65ad\u800c\u6ca1\u8fdb\u5165 COMPLETED\u3002
+        \u542f\u52a8\u65f6\u5c06\u5176\u76f4\u63a5\u6807\u8bb0\u4e3a COMPLETED\uff0c\u4ee5\u4fbf\u7528\u6237\u53ef\u7ee7\u7eed\u751f\u6210\u62a5\u544a\u3002
+        """
+        import glob
+        recovered = []
+        try:
+            for d in glob.glob(os.path.join(cls.RUN_STATE_DIR, "sim_*")):
+                sid = os.path.basename(d)
+                try:
+                    state = cls.get_run_state(sid)
+                except Exception:
+                    continue
+                if state is None or state.runner_status != RunnerStatus.STOPPING:
+                    continue
+                state.runner_status = RunnerStatus.COMPLETED
+                state.completed_at = datetime.now().astimezone().isoformat()
+                cls._save_run_state(state)
+                cls._sync_simulation_status(sid, RunnerStatus.COMPLETED)
+                recovered.append(sid)
+                logger.info(f"\u542f\u52a8\u6062\u590d: {sid} STOPPING -> COMPLETED")
+            if recovered:
+                logger.info(f"\u542f\u52a8\u6062\u590d\u5b8c\u6210\uff0c\u5171\u6062\u590d {len(recovered)} \u4e2a: {recovered}")
+            return recovered
+        except Exception as e:
+            logger.error(f"\u542f\u52a8\u6062\u590d\u5931\u8d25: {e}")
+            return recovered
+
+    @classmethod
     def get_run_state(cls, simulation_id: str) -> Optional[SimulationRunState]:
         """获取运行状态"""
         if simulation_id in cls._run_states:

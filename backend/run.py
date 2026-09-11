@@ -36,6 +36,13 @@ def main():
     # 创建应用
     app = create_app()
     
+    # 恢复卡在 STOPPING 的模拟（pm2 重启中断监控线程后遗留）
+    try:
+        from app.services.simulation_runner import SimulationRunner
+        SimulationRunner.recover_stuck_simulations()
+    except Exception as e:
+        print(f"启动恢复跳过: {e}")
+    
     # 获取运行配置
     host = os.environ.get('FLASK_HOST', '0.0.0.0')
     port = int(os.environ.get('FLASK_PORT', 5001))
