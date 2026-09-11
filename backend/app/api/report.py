@@ -70,6 +70,10 @@ def generate_report():
                 "success": False,
                 "error": "force_regenerate must be a JSON boolean",
             }), 400
+
+        report_format = data.get('format', 'summary')
+        if report_format not in ('summary', 'long'):
+            report_format = 'summary'
         
         # 获取模拟信息
         manager = SimulationManager()
@@ -267,7 +271,8 @@ def generate_report():
 
                     report = agent.generate_report(
                         progress_callback=progress_callback,
-                        report_id=report_id
+                        report_id=report_id,
+                        format=report_format
                     )
                     ReportManager.save_report(report)
 

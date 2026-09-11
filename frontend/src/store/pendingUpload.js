@@ -17,7 +17,9 @@ const state = reactive({
 export const simulationSettings = reactive({
   durationValue: 12,
   durationUnit: 'months',
-  frequency: 'weekly'
+  frequency: 'weekly',
+  graphMemoryEnabled: false,
+  reportFormat: 'summary'
 })
 
 // 持久化到 localStorage，避免页面刷新/跳转后确定性参数被重置
@@ -27,7 +29,9 @@ function persistSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       durationValue: simulationSettings.durationValue,
       durationUnit: simulationSettings.durationUnit,
-      frequency: simulationSettings.frequency
+      frequency: simulationSettings.frequency,
+      graphMemoryEnabled: simulationSettings.graphMemoryEnabled,
+      reportFormat: simulationSettings.reportFormat
     }))
   } catch (e) { /* ignore */ }
 }
@@ -39,6 +43,8 @@ function loadSettings() {
       simulationSettings.durationValue = parsed.durationValue ?? 12
       simulationSettings.durationUnit = parsed.durationUnit ?? 'months'
       simulationSettings.frequency = parsed.frequency ?? 'weekly'
+      simulationSettings.graphMemoryEnabled = parsed.graphMemoryEnabled ?? false
+      simulationSettings.reportFormat = parsed.reportFormat ?? 'summary'
     }
   } catch (e) { /* ignore */ }
 }

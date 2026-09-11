@@ -1316,7 +1316,8 @@ class ReportAgent:
 
     def plan_outline(
         self, 
-        progress_callback: Optional[Callable] = None
+        progress_callback: Optional[Callable] = None,
+        format: str = 'summary'
     ) -> ReportOutline:
         """
         规划报告大纲
@@ -1344,6 +1345,9 @@ class ReportAgent:
             progress_callback("planning", 30, t('progress.generatingOutline'))
         
         system_prompt = f"{get_language_instruction()}\n\n{PLAN_SYSTEM_PROMPT}"
+        if format == 'summary':
+            system_prompt = system_prompt.replace("At least 2 sections, at most 5 sections", "Exactly 1 section")
+            system_prompt = system_prompt.replace("at least 2 and at most 5 elements", "exactly 1 element")
         user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
             simulation_requirement=self.simulation_requirement,
             total_nodes=context.get('graph_statistics', {}).get('total_nodes', 0),
@@ -1352,6 +1356,8 @@ class ReportAgent:
             total_entities=context.get('total_entities', 0),
             related_facts_json=json.dumps(context.get('related_facts', [])[:10], ensure_ascii=False, indent=2),
         )
+        if format == 'summary':
+            user_prompt = user_prompt.replace("at least 2, at most 5", "exactly 1")
 
         try:
             response = self.llm.chat_json(
@@ -1724,7 +1730,8 @@ class ReportAgent:
     def generate_report(
         self, 
         progress_callback: Optional[Callable[[str, int, str], None]] = None,
-        report_id: Optional[str] = None
+        report_id: Optional[str] = None,
+        format: str = 'summary'
     ) -> Report:
         """
         生成完整报告（分章节实时输出）
@@ -1801,6 +1808,7 @@ class ReportAgent:
                 progress_callback("planning", 0, t('progress.startPlanningOutline'))
             
             outline = self.plan_outline(
+                format=format,
                 progress_callback=lambda stage, prog, msg: 
                     progress_callback(stage, prog // 5, msg) if progress_callback else None
             )

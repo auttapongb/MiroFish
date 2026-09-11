@@ -91,6 +91,11 @@
       </div>
 
       <div class="action-controls">
+        <div class="report-format-toggle">
+          <span class="format-label">Report format:</span>
+          <button type="button" class="format-btn" :class="{ active: reportFormat === 'summary' }" @click="reportFormat = 'summary'">Summary</button>
+          <button type="button" class="format-btn" :class="{ active: reportFormat === 'long' }" @click="reportFormat = 'long'">Long</button>
+        </div>
         <button 
           class="action-btn primary"
           :disabled="phase !== 2 || isGeneratingReport"
@@ -296,6 +301,7 @@ import {
   getRunStatusDetail
 } from '../api/simulation'
 import { generateReport } from '../api/report'
+import { simulationSettings } from '../store/pendingUpload'
 
 const { t } = useI18n()
 
@@ -319,6 +325,7 @@ const router = useRouter()
 const isGeneratingReport = ref(false)
 const phase = ref(0) // 0: 未开始, 1: 运行中, 2: 已完成
 const isStarting = ref(false)
+const reportFormat = ref('summary')
 const isStopping = ref(false)
 const startError = ref(null)
 const runStatus = ref({})
@@ -399,7 +406,7 @@ const doStartSimulation = async () => {
       simulation_id: props.simulationId,
       platform: 'parallel',
       force: false,  // 不要强制重启运行中的模拟（避免刷新后误杀）
-      enable_graph_memory_update: false  // 关闭图谱写回，避免 Zep 免费版 episode 处理超时导致模拟失败
+      enable_graph_memory_update: simulationSettings.graphMemoryEnabled
     }
     
     if (props.maxRounds) {
@@ -659,7 +666,8 @@ const handleNextStep = async () => {
   try {
     const res = await generateReport({
       simulation_id: props.simulationId,
-      force_regenerate: true
+      force_regenerate: true,
+      format: reportFormat.value
     })
     
     if (res.success && res.data) {
@@ -1264,5 +1272,30 @@ onUnmounted(() => {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-right: 6px;
+}
+
+.report-format-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.format-label {
+  font-size: 13px;
+  color: #8b949e;
+}
+.format-btn {
+  padding: 5px 14px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: transparent;
+  color: #c9d1d9;
+  cursor: pointer;
+  font-size: 13px;
+}
+.format-btn.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
 }
 </style>

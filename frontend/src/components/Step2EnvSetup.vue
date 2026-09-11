@@ -447,6 +447,11 @@
                 <span class="switch-track"></span>
                 <span class="switch-label">{{ $t('step2.customToggle') }}</span>
               </label>
+              <label class="switch-control">
+                <input type="checkbox" v-model="simulationSettings.graphMemoryEnabled">
+                <span class="switch-track"></span>
+                <span class="switch-label">Graph memory write (off by default)</span>
+              </label>
             </div>
             
             <Transition name="fade" mode="out-in">
