@@ -243,6 +243,23 @@
               </div>
             </div>
 
+            <!-- 模拟深度（快 vs 深） -->
+            <div class="console-section">
+              <div class="console-header">
+                <span class="console-label">⚡ Simulation Depth</span>
+              </div>
+              <div class="depth-toggle">
+                <button type="button" class="depth-btn" :class="{ active: isFast }" @click="setDepth('fast')" :disabled="loading">
+                  <span class="depth-name">⚡ Fast</span>
+                  <span class="depth-sub">quick preview · 1 month ≈ 4 rounds</span>
+                </button>
+                <button type="button" class="depth-btn" :class="{ active: isDepth }" @click="setDepth('depth')" :disabled="loading">
+                  <span class="depth-name">🔬 Depth</span>
+                  <span class="depth-sub">full analysis · 12 months ≈ 48 rounds</span>
+                </button>
+              </div>
+            </div>
+
             <!-- 时长与频率（确定性） -->
             <div class="console-section">
               <div class="console-header">
@@ -351,6 +368,21 @@ const computedRounds = computed(() => {
   const weeks = formData.value.durationUnit === 'months' ? v * 4 : v
   return formData.value.frequency === 'monthly' ? Math.max(1, Math.floor(weeks / 4)) : weeks
 })
+
+// 快 vs 深模式预设
+const isFast = computed(() => formData.value.durationValue === 1 && formData.value.durationUnit === 'months' && formData.value.frequency === 'weekly')
+const isDepth = computed(() => formData.value.durationValue === 12 && formData.value.durationUnit === 'months' && formData.value.frequency === 'weekly')
+const setDepth = (mode) => {
+  if (mode === 'fast') {
+    formData.value.durationValue = 1
+    formData.value.durationUnit = 'months'
+    formData.value.frequency = 'weekly'
+  } else {
+    formData.value.durationValue = 12
+    formData.value.durationUnit = 'months'
+    formData.value.frequency = 'weekly'
+  }
+}
 
 // 触发文件选择
 const triggerFileInput = () => {
@@ -1070,6 +1102,14 @@ const startSimulation = () => {
 .duration-select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-family: var(--font-mono); font-size: .9rem; background: var(--white); color: var(--black); }
 .duration-sep { color: var(--gray-text); font-weight: 700; }
 .duration-hint { margin-top: 8px; font-family: var(--font-mono); font-size: .8rem; color: var(--orange); }
+.depth-toggle { display: flex; gap: 10px; }
+.depth-btn { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--white); color: var(--black); cursor: pointer; text-align: left; transition: border-color .15s, box-shadow .15s; }
+.depth-btn:hover { border-color: var(--orange); }
+.depth-btn.active { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(255, 69, 0, .15); }
+.depth-btn:disabled { opacity: .5; cursor: not-allowed; }
+.depth-name { font-weight: 600; font-size: .95rem; }
+.depth-sub { font-family: var(--font-mono); font-size: .72rem; color: var(--gray-text); }
+.depth-btn.active .depth-sub { color: var(--orange); }
 
 .prompt-upload { margin-top: 10px; padding: 12px 16px; border: 1px dashed var(--border); border-radius: 10px; cursor: pointer; text-align: center; font-family: var(--font-mono); font-size: .8rem; color: var(--gray-text); transition: all .2s; }
 .prompt-upload:hover, .prompt-upload.drag-over { border-color: var(--orange); color: var(--orange); background: #fff5f0; }
