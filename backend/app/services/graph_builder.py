@@ -168,31 +168,43 @@ class GraphBuilderService:
                 message=t('progress.textSplit', count=total_chunks)
             )
             
-            # 4. 分批发送数据
-            submission = self.add_text_batches(
-                graph_id, chunks, batch_size,
-                lambda msg, prog: self.task_manager.update_task(
-                    task_id,
-                    progress=20 + int(prog * 0.4),  # 20-60%
-                    message=msg
+            # 4. 分批发送数据（卡死/超时自动重提交一次新批次）
+            submission = None
+            for _attempt in range(2):
+                submission = self.add_text_batches(
+                    graph_id, chunks, batch_size,
+                    lambda msg, prog: self.task_manager.update_task(
+                        task_id,
+                        progress=20 + int(prog * 0.4),  # 20-60%
+                        message=msg
+                    ),
+                    operation_id_suffix=f"-r{_attempt}",
                 )
-            )
-            
-            # 5. 等待Zep处理完成
-            self.task_manager.update_task(
-                task_id,
-                progress=60,
-                message=t('progress.waitingZepProcess')
-            )
-            
-            self._wait_for_batch(
-                submission,
-                lambda msg, prog: self.task_manager.update_task(
+
+                # 5. 等待Zep处理完成
+                self.task_manager.update_task(
                     task_id,
-                    progress=60 + int(prog * 0.3),  # 60-90%
-                    message=msg
+                    progress=60,
+                    message=t('progress.waitingZepProcess')
                 )
-            )
+
+                try:
+                    self._wait_for_batch(
+                        submission,
+                        lambda msg, prog: self.task_manager.update_task(
+                            task_id,
+                            progress=60 + int(prog * 0.3),  # 60-90%
+                            message=msg
+                        )
+                    )
+                    break
+                except TimeoutError:
+                    if _attempt == 0:
+                        logger.warning(
+                            f"Zep 批次 {submission.batch_id} 卡死，自动重提交新批次..."
+                        )
+                        continue
+                    raise
             
             # 6. 获取图谱信息
             self.task_manager.update_task(
@@ -411,6 +423,7 @@ class GraphBuilderService:
         batch_size: int = 350,
         progress_callback: Optional[Callable] = None,
         batch_created_callback: Optional[Callable[[str | None, str], None]] = None,
+        operation_id_suffix: str = "",
     ) -> BatchSubmission:
         """Submit document chunks through Zep's current Batch API.
 
@@ -425,7 +438,7 @@ class GraphBuilderService:
         self.validate_batch_chunks(chunks, batch_size=batch_size)
 
         total_chunks = len(chunks)
-        operation_id = self.build_operation_id(graph_id, chunks)
+        operation_id = self.build_operation_id(graph_id, chunks) + operation_id_suffix
         if batch_created_callback:
             # Journal the deterministic operation before the server-generated
             # batch ID POST. This leaves enough identity for later diagnosis
@@ -653,8 +666,13 @@ class GraphBuilderService:
             status = getattr(summary, "status", None)
             progress = getattr(summary, "progress", None)
             percent = float(getattr(progress, "percent_complete", 0) or 0) / 100
+            completed = int(getattr(progress, "succeeded_items", 0) or 0)
+            # 停滞检测：0 成功条目超过 120s 视为 Zep 批次卡死，提前失败（触发上层重提交）
+            if completed == 0 and time.time() - start_time > 120:
+                raise TimeoutError(
+                    f"Zep batch {submission.batch_id} stalled at 0/{submission.item_count} items after 120s"
+                )
             if progress_callback:
-                completed = int(getattr(progress, "succeeded_items", 0) or 0)
                 progress_callback(
                     t(
                         'progress.zepProcessing',
