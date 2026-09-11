@@ -680,7 +680,7 @@ class GraphBuilderService:
                     elapsed=int(time.time() - start_time),
                 )
                 if completed == 0:
-                    _msg = f"{_msg} — Zep 免费版处理较慢，通常需 10-15 分钟，请耐心等待"
+                    _msg = f"{_msg} — Zep free tier is slow; typically 10-15 min, please be patient"
                 progress_callback(
                     _msg,
                     min(max(percent, 0.0), 1.0),
