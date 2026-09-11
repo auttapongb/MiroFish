@@ -18,7 +18,7 @@ export const simulationSettings = reactive({
   durationValue: 12,
   durationUnit: 'months',
   frequency: 'weekly',
-  graphMemoryEnabled: false,
+  graphMemoryEnabled: true,
   reportFormat: 'summary'
 })
 
@@ -43,7 +43,7 @@ function loadSettings() {
       simulationSettings.durationValue = parsed.durationValue ?? 12
       simulationSettings.durationUnit = parsed.durationUnit ?? 'months'
       simulationSettings.frequency = parsed.frequency ?? 'weekly'
-      simulationSettings.graphMemoryEnabled = parsed.graphMemoryEnabled ?? false
+      simulationSettings.graphMemoryEnabled = parsed.graphMemoryEnabled ?? true
       simulationSettings.reportFormat = parsed.reportFormat ?? 'summary'
     }
   } catch (e) { /* ignore */ }
