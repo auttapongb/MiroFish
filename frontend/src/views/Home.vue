@@ -224,6 +224,31 @@
               </div>
             </div>
 
+            <!-- 时长与频率（确定性） -->
+            <div class="console-section">
+              <div class="console-header">
+                <span class="console-label">⏱ Simulation Duration (deterministic)</span>
+              </div>
+              <div class="duration-row">
+                <input
+                  v-model.number="formData.durationValue"
+                  type="number" min="1" max="240"
+                  class="duration-input"
+                  :disabled="loading"
+                />
+                <select v-model="formData.durationUnit" class="duration-select" :disabled="loading">
+                  <option value="weeks">weeks</option>
+                  <option value="months">months</option>
+                </select>
+                <span class="duration-sep">@</span>
+                <select v-model="formData.frequency" class="duration-select" :disabled="loading">
+                  <option value="weekly">weekly (1 round = 1 week)</option>
+                  <option value="monthly">monthly (1 round = 1 month)</option>
+                </select>
+              </div>
+              <div class="duration-hint">→ {{ computedRounds }} simulation rounds total</div>
+            </div>
+
             <!-- 启动按钮 -->
             <div class="console-section">
               <div class="console-header">
@@ -272,7 +297,10 @@ const router = useRouter()
 
 // 表单数据
 const formData = ref({
-  simulationRequirement: ''
+  simulationRequirement: '',
+  durationValue: 12,
+  durationUnit: 'months',
+  frequency: 'weekly'
 })
 
 // 文件列表
@@ -290,6 +318,13 @@ const fileInput = ref(null)
 // 计算属性:是否可以提交
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
+})
+
+// 确定性轮次：1个月=4周，1轮=1周
+const computedRounds = computed(() => {
+  const v = Number(formData.value.durationValue) || 0
+  const weeks = formData.value.durationUnit === 'months' ? v * 4 : v
+  return formData.value.frequency === 'monthly' ? Math.max(1, Math.floor(weeks / 4)) : weeks
 })
 
 // 触发文件选择
@@ -352,7 +387,11 @@ const startSimulation = () => {
   
   // 存储待上传的数据
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
+    setPendingUpload(files.value, formData.value.simulationRequirement, {
+      durationValue: Number(formData.value.durationValue) || null,
+      durationUnit: formData.value.durationUnit,
+      frequency: formData.value.frequency
+    })
     
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
     router.push({
@@ -947,6 +986,12 @@ const startSimulation = () => {
 .seed-downloads { display: flex; flex-direction: column; gap: 6px; }
 .seed-link { display: flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600; color: #000; text-decoration: none; padding: 8px 12px; border: 1px solid var(--border, #e5e5e5); border-radius: 8px; transition: border-color .15s, background .15s; }
 .seed-link:hover { border-color: #000; background: #fafafa; }
+
+.duration-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.duration-input { width: 90px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-family: var(--font-mono); font-size: 1rem; background: var(--white); color: var(--black); }
+.duration-select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-family: var(--font-mono); font-size: .9rem; background: var(--white); color: var(--black); }
+.duration-sep { color: var(--gray-text); font-weight: 700; }
+.duration-hint { margin-top: 8px; font-family: var(--font-mono); font-size: .8rem; color: var(--orange); }
 </style>
 
 <style>

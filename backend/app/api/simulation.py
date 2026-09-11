@@ -497,6 +497,10 @@ def prepare_simulation():
         entity_types_list = data.get('entity_types')
         use_llm_for_profiles = data.get('use_llm_for_profiles', True)
         parallel_profile_count = data.get('parallel_profile_count', 5)
+        # 确定性时间配置（可选）：用户显式指定时长 + 频率，覆盖LLM生成的轮次
+        duration_value = data.get('duration_value')          # int, 如 12
+        duration_unit = data.get('duration_unit', 'months')  # 'weeks' | 'months'
+        frequency = data.get('frequency', 'weekly')          # 'weekly' | 'monthly'
         
         # ========== 同步获取实体数量（在后台任务启动前） ==========
         # 这样前端在调用prepare后立即就能获取到预期Agent总数
@@ -617,7 +621,10 @@ def prepare_simulation():
                     defined_entity_types=entity_types_list,
                     use_llm_for_profiles=use_llm_for_profiles,
                     progress_callback=progress_callback,
-                    parallel_profile_count=parallel_profile_count
+                    parallel_profile_count=parallel_profile_count,
+                    duration_value=duration_value,
+                    duration_unit=duration_unit,
+                    frequency=frequency
                 )
 
                 if result_state.status == SimulationStatus.FAILED:

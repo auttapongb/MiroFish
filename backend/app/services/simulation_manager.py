@@ -249,7 +249,10 @@ class SimulationManager:
         defined_entity_types: Optional[List[str]] = None,
         use_llm_for_profiles: bool = True,
         progress_callback: Optional[callable] = None,
-        parallel_profile_count: int = 3
+        parallel_profile_count: int = 3,
+        duration_value: Optional[int] = None,
+        duration_unit: str = 'months',
+        frequency: str = 'weekly'
     ) -> SimulationState:
         """
         准备模拟环境（全程自动化）
@@ -428,7 +431,10 @@ class SimulationManager:
                 document_text=document_text,
                 entities=filtered.entities,
                 enable_twitter=state.enable_twitter,
-                enable_reddit=state.enable_reddit
+                enable_reddit=state.enable_reddit,
+                duration_value=duration_value,
+                duration_unit=duration_unit,
+                frequency=frequency
             )
             
             if progress_callback:

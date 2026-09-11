@@ -223,7 +223,13 @@ async function runPipeline() {
     // 4. Prepare (personas)
     stageIndex.value = 2
     addLog('Generating agent personas from the seed…')
-    const pres = await prepareSimulation({ simulation_id: simulationId.value, use_llm_for_profiles: true })
+    const pres = await prepareSimulation({
+      simulation_id: simulationId.value,
+      use_llm_for_profiles: true,
+      duration_value: pending.durationValue ?? null,
+      duration_unit: pending.durationUnit ?? 'months',
+      frequency: pending.frequency ?? 'weekly'
+    })
     if (!pres.success) throw new Error(pres.error || 'Prepare failed')
     if (pres.data && pres.data.task_id) {
       const pres2 = await poll(() => getPrepareStatus({ task_id: pres.data.task_id, simulation_id: simulationId.value }),
@@ -236,7 +242,7 @@ async function runPipeline() {
     // 5. Start simulation
     stageIndex.value = 3
     addLog('Starting parallel simulation…')
-    await startSimulation({ simulation_id: simulationId.value, platform: 'parallel', max_rounds: 20 })
+    await startSimulation({ simulation_id: simulationId.value, platform: 'parallel' })
     await poll(async () => {
       const r = await getRunStatus(simulationId.value)
       if (r.success && r.data) {

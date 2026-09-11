@@ -253,6 +253,9 @@ class SimulationConfigGenerator:
         enable_twitter: bool = True,
         enable_reddit: bool = True,
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        duration_value: Optional[int] = None,
+        duration_unit: str = 'months',
+        frequency: str = 'weekly',
     ) -> SimulationParameters:
         """
         智能生成完整的模拟配置（分步生成）
@@ -340,7 +343,7 @@ class SimulationConfigGenerator:
         # ========== 步骤1: 生成时间配置 ==========
         report_progress(1, t('progress.generatingTimeConfig'))
         num_entities = len(entities)
-        time_config_result = self._generate_time_config(context, num_entities)
+        time_config_result = self._generate_time_config(context, num_entities, duration_value, duration_unit, frequency)
         time_config = self._parse_time_config(time_config_result, num_entities)
         reasoning_parts.append(f"{t('progress.timeConfigLabel')}: {time_config_result.get('reasoning', t('common.success'))}")
         
@@ -578,8 +581,8 @@ class SimulationConfigGenerator:
         
         return None
     
-    def _generate_time_config(self, context: str, num_entities: int) -> Dict[str, Any]:
-        """生成时间配置"""
+    def _generate_time_config(self, context: str, num_entities: int, duration_value: Optional[int] = None, duration_unit: str = 'months', frequency: str = 'weekly') -> Dict[str, Any]:
+        """生成时间配置（若显式指定时长/频率，则确定性覆盖轮次）"""
         # 使用配置的上下文截断长度
         context_truncated = context[:self.TIME_CONFIG_CONTEXT_LENGTH]
         
@@ -635,10 +638,38 @@ class SimulationConfigGenerator:
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}"
 
         try:
-            return self._call_llm_with_retry(prompt, system_prompt)
+            result = self._call_llm_with_retry(prompt, system_prompt)
         except Exception as e:
             logger.warning(f"时间配置LLM生成失败: {e}, 使用默认配置")
-            return self._get_default_time_config(num_entities)
+            result = self._get_default_time_config(num_entities)
+
+        # 确定性覆盖：用户显式指定时长和频率时，覆盖LLM生成的 total_simulation_hours / minutes_per_round
+        if duration_value is not None and duration_value > 0:
+            total_rounds, total_hours, minutes_per_round = self._compute_explicit_time(duration_value, duration_unit, frequency)
+            result["total_simulation_hours"] = total_hours
+            result["minutes_per_round"] = minutes_per_round
+            result["reasoning"] = f"用户指定时长: {duration_value} {duration_unit}, {frequency} → {total_rounds} rounds"
+            logger.info(f"确定性时间配置: {duration_value}{duration_unit} @ {frequency} = {total_rounds} rounds")
+
+        return result
+
+    @staticmethod
+    def _compute_explicit_time(duration_value: int, duration_unit: str, frequency: str):
+        """根据用户显式指定的时长和频率计算确定性时间配置。
+        单位约定：1个月 = 4周，1轮 = 1周（7天 = 168小时 = 10080分钟）。
+        - duration_unit='months' → 总周数 = value * 4
+        - duration_unit='weeks'  → 总周数 = value
+        - frequency='weekly'  → 总轮数 = 总周数
+        - frequency='monthly' → 总轮数 = 总周数 // 4
+        """
+        total_weeks = duration_value * 4 if duration_unit == 'months' else duration_value
+        if frequency == 'monthly':
+            total_rounds = max(1, total_weeks // 4)
+        else:
+            total_rounds = total_weeks
+        minutes_per_round = 7 * 24 * 60       # 1轮 = 1周
+        total_hours = total_rounds * 7 * 24   # 总模拟小时数
+        return total_rounds, total_hours, minutes_per_round
     
     def _get_default_time_config(self, num_entities: int) -> Dict[str, Any]:
         """获取默认时间配置（中国人作息）"""
