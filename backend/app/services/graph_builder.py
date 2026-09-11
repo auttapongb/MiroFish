@@ -29,6 +29,10 @@ from ..utils.zep import (
 )
 from .text_processor import TextProcessor
 from ..utils.locale import t, get_locale, set_locale
+from ..utils.logger import get_logger
+
+
+logger = get_logger('mirofish.graph_builder')
 
 
 @dataclass
