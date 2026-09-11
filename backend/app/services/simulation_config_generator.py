@@ -668,6 +668,7 @@ class SimulationConfigGenerator:
         - frequency='monthly' → 总轮数 = 总周数 // 4
         """
         total_weeks = duration_value * 4 if duration_unit == 'months' else duration_value
+        total_weeks = min(total_weeks, 12)  # 上限 3 个月（12 周）
         if frequency == 'monthly':
             total_rounds = max(1, total_weeks // 4)
         else:

@@ -399,7 +399,7 @@ const doStartSimulation = async () => {
       simulation_id: props.simulationId,
       platform: 'parallel',
       force: false,  // 不要强制重启运行中的模拟（避免刷新后误杀）
-      enable_graph_memory_update: true  // 新 Zep key 限流 300/min，可安全开启动态图谱更新
+      enable_graph_memory_update: false  // 关闭图谱写回，避免 Zep 免费版 episode 处理超时导致模拟失败
     }
     
     if (props.maxRounds) {

@@ -255,7 +255,7 @@
                 </button>
                 <button type="button" class="depth-btn" :class="{ active: isDepth }" @click="setDepth('depth')" :disabled="loading">
                   <span class="depth-name">🔬 Depth</span>
-                  <span class="depth-sub">full analysis · 12 months ≈ 48 rounds</span>
+                  <span class="depth-sub">full analysis · 3 months ≈ 12 rounds</span>
                 </button>
               </div>
             </div>
@@ -268,7 +268,7 @@
               <div class="duration-row">
                 <input
                   v-model.number="formData.durationValue"
-                  type="number" min="1" max="240"
+                  type="number" min="1" :max="formData.durationUnit === 'months' ? 3 : 12"
                   class="duration-input"
                   :disabled="loading"
                 />
@@ -336,7 +336,7 @@ const router = useRouter()
 // 表单数据
 const formData = ref({
   simulationRequirement: '',
-  durationValue: 12,
+  durationValue: 3,
   durationUnit: 'months',
   frequency: 'weekly'
 })
@@ -371,14 +371,14 @@ const computedRounds = computed(() => {
 
 // 快 vs 深模式预设
 const isFast = computed(() => formData.value.durationValue === 1 && formData.value.durationUnit === 'months' && formData.value.frequency === 'weekly')
-const isDepth = computed(() => formData.value.durationValue === 12 && formData.value.durationUnit === 'months' && formData.value.frequency === 'weekly')
+const isDepth = computed(() => formData.value.durationValue === 3 && formData.value.durationUnit === 'months' && formData.value.frequency === 'weekly')
 const setDepth = (mode) => {
   if (mode === 'fast') {
     formData.value.durationValue = 1
     formData.value.durationUnit = 'months'
     formData.value.frequency = 'weekly'
   } else {
-    formData.value.durationValue = 12
+    formData.value.durationValue = 3
     formData.value.durationUnit = 'months'
     formData.value.frequency = 'weekly'
   }
