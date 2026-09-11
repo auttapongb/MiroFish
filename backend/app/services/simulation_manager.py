@@ -319,6 +319,11 @@ class SimulationManager:
             _hc = count_persona_headings(document_text)
             if _hc > 0:
                 state.entities_count = _hc
+                # 确定性：把实体锚定到 seed 的 `### N.` persona 清单，避免 Zep 过度抽取（30 -> 56）
+                from .simulation_config_generator import anchor_entities_to_personas
+                filtered.entities = anchor_entities_to_personas(filtered.entities, document_text)
+                filtered.filtered_count = len(filtered.entities)
+                state.entities_count = len(filtered.entities)
             
             if progress_callback:
                 progress_callback(

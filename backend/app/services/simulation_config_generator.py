@@ -50,6 +50,50 @@ CHINA_TIMEZONE_CONFIG = {
 }
 
 
+def anchor_entities_to_personas(entities, document_text):
+    """以 seed 中的 `### N. Full Name — Role` 标题为权威 Agent 清单：
+    过滤掉 Zep 非确定性抽取产生的非 persona 实体，并为漏抽的 persona 补齐占位实体。"""
+    personas = {}  # name -> description
+    _cur_name, _cur_lines = None, []
+    for _line in (document_text or "").split("\n"):
+        _m = re.match(r'###\s*\d+\.\s*(.+?)\s*—', _line)
+        if _m:
+            if _cur_name:
+                personas[_cur_name.strip()] = "\n".join(_cur_lines).strip()
+            _cur_name = _m.group(1).strip()
+            _cur_lines = [_line]
+        elif _cur_name:
+            _cur_lines.append(_line)
+    if _cur_name:
+        personas[_cur_name.strip()] = "\n".join(_cur_lines).strip()
+
+    if not personas:
+        return entities
+
+    _by_name = {}
+    for _e in entities:
+        _by_name[(_e.name or "").strip().lower()] = _e
+    _kept = []
+    for _pname, _pdesc in personas.items():
+        _pl = _pname.lower()
+        _match = None
+        for _en, _e in _by_name.items():
+            if _pl in _en or _en in _pl:
+                _match = _e
+                break
+        if _match is not None:
+            _kept.append(_match)
+        else:
+            _kept.append(EntityNode(
+                uuid=f"persona-{_pname}",
+                name=_pname,
+                labels=["Person"],
+                summary=_pdesc,
+                attributes={},
+            ))
+    return _kept
+
+
 @dataclass
 class AgentActivityConfig:
     """单个Agent的活动配置"""
@@ -276,48 +320,9 @@ class SimulationConfigGenerator:
         """
         logger.info(f"开始智能生成模拟配置: simulation_id={simulation_id}, 实体数={len(entities)}")
 
-        # FIX: 实体抽取由 Zep 的 LLM 完成，非确定性——会把房产（"Rama IV penthouse"）、
-        # 群体（"settlement patients"）、组织等误当作 Agent，且偶尔漏掉某个 persona。
-        # 因此以 seed 中的 `### N. Full Name — Role` 标题为权威 Agent 清单：
-        # 1) 过滤掉非 persona 实体；2) 为漏抽的 persona 补齐占位实体。
-        personas = {}  # name -> description
-        _cur_name, _cur_lines = None, []
-        for _line in (document_text or "").split("\n"):
-            _m = re.match(r'###\s*\d+\.\s*(.+?)\s*—', _line)
-            if _m:
-                if _cur_name:
-                    personas[_cur_name.strip()] = "\n".join(_cur_lines).strip()
-                _cur_name = _m.group(1).strip()
-                _cur_lines = [_line]
-            elif _cur_name:
-                _cur_lines.append(_line)
-        if _cur_name:
-            personas[_cur_name.strip()] = "\n".join(_cur_lines).strip()
-
-        if personas:
-            _by_name = {}
-            for _e in entities:
-                _by_name[(_e.name or "").strip().lower()] = _e
-            _kept = []
-            for _pname, _pdesc in personas.items():
-                _pl = _pname.lower()
-                _match = None
-                for _en, _e in _by_name.items():
-                    if _pl in _en or _en in _pl:
-                        _match = _e
-                        break
-                if _match is not None:
-                    _kept.append(_match)
-                else:
-                    _kept.append(EntityNode(
-                        uuid=f"persona-{_pname}",
-                        name=_pname,
-                        labels=["Person"],
-                        summary=_pdesc,
-                        attributes={},
-                    ))
-            entities = _kept
-            logger.info(f"以 persona 标题确定 Agent 清单: {len(entities)}个Agent实体")
+        # 确定性：以 seed 中的 `### N. Full Name — Role` 标题为权威 Agent 清单
+        entities = anchor_entities_to_personas(entities, document_text)
+        logger.info(f"以 persona 标题确定 Agent 清单: {len(entities)}个Agent实体")
         
         # 计算总步骤数
         num_batches = math.ceil(len(entities) / self.AGENTS_PER_BATCH)
