@@ -13,6 +13,13 @@ const state = reactive({
   isPending: false
 })
 
+// 持久化的模拟设置（跨 simple/detail 模式共享，clearPendingUpload 不清空）
+export const simulationSettings = reactive({
+  durationValue: null,
+  durationUnit: 'months',
+  frequency: 'weekly'
+})
+
 export function setPendingUpload(files, requirement, duration = {}) {
   state.files = files
   state.simulationRequirement = requirement
@@ -20,6 +27,9 @@ export function setPendingUpload(files, requirement, duration = {}) {
   state.durationUnit = duration.durationUnit ?? 'months'
   state.frequency = duration.frequency ?? 'weekly'
   state.isPending = true
+  simulationSettings.durationValue = duration.durationValue ?? null
+  simulationSettings.durationUnit = duration.durationUnit ?? 'months'
+  simulationSettings.frequency = duration.frequency ?? 'weekly'
 }
 
 export function getPendingUpload() {

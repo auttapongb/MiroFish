@@ -641,6 +641,7 @@ import {
   getSimulationConfig,
   getSimulationConfigRealtime
 } from '../api/simulation'
+import { simulationSettings } from '../store/pendingUpload'
 
 const { t } = useI18n()
 
@@ -794,7 +795,10 @@ const startPrepareSimulation = async () => {
     const res = await prepareSimulation({
       simulation_id: props.simulationId,
       use_llm_for_profiles: true,
-      parallel_profile_count: 5
+      parallel_profile_count: 5,
+      duration_value: simulationSettings.durationValue ?? null,
+      duration_unit: simulationSettings.durationUnit ?? 'months',
+      frequency: simulationSettings.frequency ?? 'weekly'
     })
     
     if (res.success && res.data) {
