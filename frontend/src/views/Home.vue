@@ -143,7 +143,7 @@
                   ref="fileInput"
                   type="file"
                   multiple
-                  accept=".pdf,.md,.txt"
+                  accept=".pdf,.md,.markdown,.txt"
                   @change="handleFileSelect"
                   style="display: none"
                   :disabled="loading"
@@ -233,12 +233,12 @@
                 <input
                   ref="scenarioFileInput"
                   type="file"
-                  accept=".md,.txt"
+                  accept=".md,.markdown,.txt"
                   @change="handleScenarioFileSelect"
                   style="display: none"
                   :disabled="loading"
                 />
-                <span v-if="!formData.simulationRequirement" class="pu-text">📄 Upload scenario file (.md / .txt) — or drag & drop</span>
+                <span v-if="!formData.simulationRequirement" class="pu-text">📄 Upload scenario file (.md / .markdown / .txt) — or drag & drop</span>
                 <span v-else class="pu-text">📄 Scenario loaded — click to replace with another file</span>
               </div>
             </div>
@@ -284,6 +284,8 @@
                 </button>
               </div>
             </div>
+
+            <div v-if="error" class="error-banner">{{ error }}</div>
 
             <div class="console-section btn-section">
               <button 
@@ -382,13 +384,29 @@ const handleDrop = (e) => {
   addFiles(droppedFiles)
 }
 
-// 添加文件
+// 文件类型检测：规范化扩展名 → 'md' | 'txt' | 'pdf' | null
+const detectFileType = (name) => {
+  const n = (name || '').trim().toLowerCase()
+  if (n.endsWith('.markdown') || n.endsWith('.md')) return 'md'
+  if (n.endsWith('.txt')) return 'txt'
+  if (n.endsWith('.pdf')) return 'pdf'
+  return null
+}
+
+// 添加文件（带明确错误反馈，不再静默丢弃）
 const addFiles = (newFiles) => {
-  const validFiles = newFiles.filter(file => {
-    const ext = file.name.split('.').pop().toLowerCase()
-    return ['pdf', 'md', 'txt'].includes(ext)
+  const validFiles = []
+  const rejected = []
+  newFiles.forEach(file => {
+    if (detectFileType(file.name)) validFiles.push(file)
+    else rejected.push(file.name)
   })
   files.value.push(...validFiles)
+  if (rejected.length) {
+    error.value = `Unsupported file type: ${rejected.join(', ')} (allowed: .pdf, .md, .markdown, .txt)`
+  } else {
+    error.value = ''
+  }
 }
 
 // 移除文件
@@ -415,9 +433,13 @@ const handleScenarioDrop = (e) => {
 
 // 读取场景文件内容，填充到 prompt 文本框（.md/.txt，前端 FileReader，不改后端）
 const readScenarioFile = (f) => {
-  const ext = f.name.split('.').pop().toLowerCase()
-  if (!['md', 'txt'].includes(ext)) {
-    error.value = 'Scenario file must be .md or .txt (PDF not supported here — paste its text instead)'
+  const type = detectFileType(f.name)
+  if (type === 'pdf') {
+    error.value = 'PDF not supported for the scenario — paste its text instead'
+    return
+  }
+  if (type !== 'md' && type !== 'txt') {
+    error.value = 'Scenario file must be .md, .markdown, or .txt'
     return
   }
   const reader = new FileReader()
@@ -1051,6 +1073,8 @@ const startSimulation = () => {
 
 .prompt-upload { margin-top: 10px; padding: 12px 16px; border: 1px dashed var(--border); border-radius: 10px; cursor: pointer; text-align: center; font-family: var(--font-mono); font-size: .8rem; color: var(--gray-text); transition: all .2s; }
 .prompt-upload:hover, .prompt-upload.drag-over { border-color: var(--orange); color: var(--orange); background: #fff5f0; }
+
+.error-banner { margin: 12px 0; padding: 10px 14px; border: 1px solid #fca5a5; background: #fef2f2; color: #b91c1c; border-radius: 10px; font-family: var(--font-mono); font-size: .8rem; }
 </style>
 
 <style>
