@@ -5,6 +5,7 @@ OASIS模拟管理器
 """
 
 import os
+import re
 import json
 import shutil
 from typing import Dict, Any, List, Optional
@@ -13,6 +14,13 @@ from datetime import datetime
 from enum import Enum
 
 from ..config import Config
+
+
+def count_persona_headings(text: str) -> int:
+    """统计 reality seed 中 `### N. Name — Role` 标题数（确定性 Agent 数）。"""
+    if not text:
+        return 0
+    return len(re.findall(r'^###\s*\d+\.', text, flags=re.MULTILINE))
 from ..utils.logger import get_logger
 from .zep_entity_reader import ZepEntityReader, FilteredEntities
 from .oasis_profile_generator import OasisProfileGenerator, OasisAgentProfile
@@ -307,6 +315,10 @@ class SimulationManager:
             
             state.entities_count = filtered.filtered_count
             state.entity_types = list(filtered.entity_types)
+            # 确定性：以 seed 中的 `### N.` 标题为准，覆盖 Zep 的非确定性实体数
+            _hc = count_persona_headings(document_text)
+            if _hc > 0:
+                state.entities_count = _hc
             
             if progress_callback:
                 progress_callback(
