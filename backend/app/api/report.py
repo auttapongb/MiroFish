@@ -29,6 +29,53 @@ logger = get_logger('mirofish.api.report')
 
 # ============== 报告生成接口 ==============
 
+@report_bp.route('/stance-analysis', methods=['POST'])
+def stance_analysis():
+    """对模拟结果做逐个人设的立场分类（支持/反对/中立），供 C-level 可视化仪表盘使用。"""
+    import os, json
+    from collections import Counter
+    data = request.get_json(silent=True) or {}
+    simulation_id = data.get('simulation_id')
+    if not simulation_id:
+        return jsonify({"success": False, "error": "simulation_id required"}), 400
+
+    from ..services.simulation_manager import SimulationManager
+    sim_dir = SimulationManager()._get_simulation_dir(simulation_id)
+    profiles_path = os.path.join(sim_dir, "reddit_profiles.json")
+    if not os.path.exists(profiles_path):
+        return jsonify({"success": False, "error": "profiles not found"}), 404
+
+    profiles = json.load(open(profiles_path, encoding="utf-8"))
+    if isinstance(profiles, dict):
+        profiles = profiles.get("profiles", profiles.get("data", []))
+    briefs = [{"name": p.get("name", ""), "profession": p.get("profession", ""),
+               "persona": (p.get("persona") or "")[:500]} for p in profiles]
+
+    from ..utils.llm_client import LLMClient
+    llm = LLMClient()
+    system = ("You are a political/social analyst. Classify each persona's stance toward the "
+              "simulation scenario (e.g. the proposed integrated resort / casino at Makkasan). "
+              "Use exactly one of: \"for\", \"against\", or \"neutral\". "
+              "Give a short one-line rationale (<=12 words).")
+    user = ("Classify the stance of each persona below toward the scenario.\n\n"
+            + json.dumps(briefs, ensure_ascii=False, indent=1)
+            + "\n\nReturn ONLY JSON: {\"personas\": [{\"name\": \"...\", \"stance\": \"for|against|neutral\", \"rationale\": \"...\"}]}")
+    try:
+        result = llm.chat_json(messages=[{"role": "system", "content": system},
+                                         {"role": "user", "content": user}], temperature=0.2)
+        personas = result.get("personas", [])
+        # merge profile bio/profession/persona for drill-down
+        prof_map = {b["name"]: b for b in briefs}
+        for p in personas:
+            b = prof_map.get(p.get("name"), {})
+            p["profession"] = b.get("profession", "")
+            p["bio"] = (b.get("persona") or "")[:900]
+        distribution = dict(Counter(p.get("stance") for p in personas))
+        return jsonify({"success": True, "data": {"distribution": distribution, "personas": personas}})
+    except Exception as e:
+        logger.error(f"stance analysis failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @report_bp.route('/generate', methods=['POST'])
 def generate_report():
     """

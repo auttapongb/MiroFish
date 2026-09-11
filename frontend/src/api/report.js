@@ -4,6 +4,10 @@ import service from './index'
  * 开始报告生成
  * @param {Object} data - { simulation_id, force_regenerate? }
  */
+export const getStanceAnalysis = (simulationId) => {
+  return service.post('/api/report/stance-analysis', { simulation_id: simulationId })
+}
+
 export const generateReport = (data) => {
   return service.post('/api/report/generate', data)
 }

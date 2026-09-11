@@ -4,6 +4,7 @@
     <div class="main-split-layout">
       <!-- LEFT PANEL: Report Style -->
       <div class="left-panel report-style" ref="leftPanel">
+        <StanceDashboard v-if="simulationId" :simulationId="simulationId" />
         <div v-if="reportOutline" class="report-content-wrapper">
           <!-- Report Header -->
           <div class="report-header-block">
